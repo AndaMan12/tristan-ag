@@ -13,6 +13,8 @@ module m_userfile
   implicit none
 
   !--- PRIVATE variables -----------------------------------------!
+  logical :: use_moving_window = .false.
+  integer :: mw_shift_start = 0, mw_shift_interval = 0, mw_ncells = 0
 
   !...............................................................!
 
@@ -23,6 +25,10 @@ contains
   !--- initialization -----------------------------------------!
   subroutine userReadInput()
     implicit none
+    call getInput('moving_window', 'use_moving_window', use_moving_window, .false.)
+    call getInput('moving_window', 'mw_shift_start', mw_shift_start, 0)
+    call getInput('moving_window', 'mw_shift_interval', mw_shift_interval, 0)
+    call getInput('moving_window', 'mw_ncells', mw_ncells, 0)
   end subroutine userReadInput
 
 #ifdef PRTLPAYLOADS
@@ -180,4 +186,9 @@ contains
   end function userExcludeParticles
 #endif
   !............................................................!
+
+  subroutine userFillNewRegion(xmin, xmax)
+    implicit none
+    real, intent(in) :: xmin, xmax
+  end subroutine userFillNewRegion
 end module m_userfile
