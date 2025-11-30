@@ -12,6 +12,13 @@ module m_fields
 
   real, allocatable :: ex(:, :, :), ey(:, :, :), ez(:, :, :), &
                        bx(:, :, :), by(:, :, :), bz(:, :, :)
+
+  ! real, allocatable :: ex_p(:, :, :), ey_p(:, :, :), ez_p(:, :, :), & !AG: previous time step fields
+  !                      bx_p(:, :, :), by_p(:, :, :), bz_p(:, :, :)    !AG: previous time step fields
+                       
+  ! real, allocatable :: dt_ex(:, :, :), dt_ey(:, :, :), dt_ez(:, :, :), & !AG: previous time step fields
+  !                      dt_bx(:, :, :), dt_by(:, :, :), dt_bz(:, :, :)    !AG: previous time step fields
+
   !dir$ attributes align: 64 :: ex, ey, ez, bx, by, bz
   real, allocatable :: jx(:, :, :), jy(:, :, :), jz(:, :, :)
   real, allocatable :: jx_buff(:, :, :), jy_buff(:, :, :), jz_buff(:, :, :)

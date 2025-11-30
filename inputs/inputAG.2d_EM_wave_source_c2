@@ -1,0 +1,67 @@
+<node_configuration>
+
+  sizex  =  23
+  sizey  =  1
+  sizez  =  1
+
+<time>
+
+  last  =  20000
+
+<grid>
+
+  mx0  =  5060
+  my0  =  500
+  #mz0  =  238
+
+  boundary_x = 0
+  #abs_thick = 40
+  #absorb_x = 1
+
+  tileX  =  100
+  tileY  =  100
+  resize_tiles  = 1
+
+<algorithm>
+
+  c  =  0.35
+  nfilter  =  8
+
+<output>
+
+  enable        = 1              # enable/disable output [1]
+  flds_enable   = 0              # field output [1]
+  prtl_enable   = 1              # prtl output [1]
+  hst_enable  =  1
+  hst_interval  =  1
+  interval = 20
+  diag_enable =1  
+
+<plasma>
+
+  ppc0  =  5
+  sigma  =  100
+  c_omp  =  5
+
+<particles>
+
+  nspec  =  2
+  maxptl1  =  1e8
+  m1  =  1
+  ch1  =  1
+  maxptl2  =  1e8
+  m2  =  1
+  ch2  =  -1  
+
+<problem>
+
+  B_0 = 1
+  psi = 0.5              # Angle of B_0 with x-axis
+  B_amplitude = 0.01
+  duration = 300
+  frequency = 0.005
+  shift_gamma = 1
+  temperature = 0
+  density_decay = 5e-3
+  density_scale = 0
+  wall_x = 10

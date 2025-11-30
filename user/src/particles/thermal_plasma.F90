@@ -321,13 +321,21 @@ contains
             call throwError('Wrong species specified in fillRegionWithThermalPlasma.')
           end if
           !   shift direction is opposite for opposite signed species
+          !   AG: Repairing a bug. The original V is commented. 
           if (present(shift_gamma)) then
             if (zero_current_) then
-              fill_maxwellian % shift_dir = shift_dir
-            else
               fill_maxwellian % shift_dir = INT(SIGN(1.0, species(spec_) % ch_sp)) * shift_dir
+            else
+              fill_maxwellian % shift_dir = shift_dir
             end if
           end if
+          ! if (present(shift_gamma)) then
+          !   if (zero_current_) then
+          !     fill_maxwellian % shift_dir = shift_dir
+          !   else
+          !     fill_maxwellian % shift_dir = INT(SIGN(1.0, species(spec_) % ch_sp)) * shift_dir
+          !   end if
+          ! end if
           if (temperature .gt. 0) then
             fill_maxwellian % temperature = temperature / species(spec_) % m_sp
             call generateFromMaxwellian(fill_maxwellian, u_, v_, w_)

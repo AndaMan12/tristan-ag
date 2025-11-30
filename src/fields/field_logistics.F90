@@ -56,6 +56,22 @@ contains
     allocate (jz_buff(i1:i2, j1:j2, k1:k2))
     allocate (lg_arr(i1:i2, j1:j2, k1:k2))
 
+    ! !AG: previous time step field allocation:
+    ! allocate (ex_p(i1:i2, j1:j2, k1:k2))
+    ! allocate (ey_p(i1:i2, j1:j2, k1:k2))
+    ! allocate (ez_p(i1:i2, j1:j2, k1:k2))
+    ! allocate (bx_p(i1:i2, j1:j2, k1:k2))
+    ! allocate (by_p(i1:i2, j1:j2, k1:k2))
+    ! allocate (bz_p(i1:i2, j1:j2, k1:k2))
+
+    ! !AG: time derivative allocation:
+    ! allocate (dt_ex(i1:i2, j1:j2, k1:k2))
+    ! allocate (dt_ey(i1:i2, j1:j2, k1:k2))
+    ! allocate (dt_ez(i1:i2, j1:j2, k1:k2))
+    ! allocate (dt_bx(i1:i2, j1:j2, k1:k2))
+    ! allocate (dt_by(i1:i2, j1:j2, k1:k2))
+    ! allocate (dt_bz(i1:i2, j1:j2, k1:k2))
+
     allocate (sm_arr(0:meshblock % sx - 1, 0:meshblock % sy - 1, 0:meshblock % sz - 1))
   end subroutine reallocateFields
 
@@ -144,6 +160,23 @@ contains
     if (allocated(bx)) deallocate (bx)
     if (allocated(by)) deallocate (by)
     if (allocated(bz)) deallocate (bz)
+
+    ! !AG: Previous field data
+    ! if (allocated(ex_p)) deallocate (ex_p)
+    ! if (allocated(ey_p)) deallocate (ey_p)
+    ! if (allocated(ez_p)) deallocate (ez_p)
+    ! if (allocated(bx_p)) deallocate (bx_p)
+    ! if (allocated(by_p)) deallocate (by_p)
+    ! if (allocated(bz_p)) deallocate (bz_p)
+
+    ! !AG: Allocate time derivatives
+    ! if (allocated(dt_ex)) deallocate (dt_ex)
+    ! if (allocated(dt_ey)) deallocate (dt_ey)
+    ! if (allocated(dt_ez)) deallocate (dt_ez)
+    ! if (allocated(dt_bx)) deallocate (dt_bx)
+    ! if (allocated(dt_by)) deallocate (dt_by)
+    ! if (allocated(dt_bz)) deallocate (dt_bz)
+
     if (allocated(jx)) deallocate (jx)
     if (allocated(jy)) deallocate (jy)
     if (allocated(jz)) deallocate (jz)

@@ -1,0 +1,61 @@
+<node_configuration>
+
+  sizex  =  6
+  sizey  =  2
+  sizez  =  2
+
+<time>
+
+  last  =  1000
+
+<grid>
+
+  mx0          =  60
+  my0          =  70
+  mz0          =  70
+  tileX        =  100
+  tileY        =  100
+  tileZ        =  100
+  resize_tiles = 1 
+
+<algorithm>
+
+  c  =  0.35
+  nfilter  =  8
+
+<output>
+
+  enable        = 1              # enable/disable output [1]
+  flds_enable   = 0              # field output [1]
+  prtl_enable   = 1              # prtl output [1]
+  hst_enable  =  1
+  hst_interval  =  1
+  interval = 1
+  
+
+<plasma>
+
+  ppc0  =  0.1
+  sigma  =  10
+  c_omp  =  40
+
+<particles>
+
+  nspec  =  1
+  maxptl1  =  100000.0
+  m1  =  1
+  ch1  =  1
+  cool1 = 1
+ 
+<radiation>
+  gamma_syn      = 1          # determines the synchrotron cooling rate
+  emit_gamma_syn = 50          # determines synchrotron photon peak energy
+  beta_rec       = 0.1           # fiducial number that goes into the definition of `gamma_syn`
+  dens_limit     = 1000000 
+  
+<problem>
+  shift_gamma   = 10
+  pitch         = -0.85
+  B_field       = 10
+  
+  

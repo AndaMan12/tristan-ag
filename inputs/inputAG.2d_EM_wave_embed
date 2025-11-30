@@ -1,0 +1,81 @@
+<node_configuration>
+
+  sizex  =  80
+  sizey  =  8
+
+<time>
+
+  last  = 67500
+
+<grid>
+
+  mx0  =  24000  #15800
+  my0  =  2400
+  boundary_x = 0
+  abs_thick = 50
+  absorb_x = 0
+
+  tileX  =  100
+  tileY  =  100
+  resize_tiles  = 1
+
+<algorithm>
+
+  c  =  0.35
+  nfilter  =  8 # let's see
+  gca_rhoL      = 1              # critical larmor radius at which GCA kicks in
+  gca_EoverB    = 2              # critical E/B at which GCA kicks in
+
+<output>
+
+  enable        = 1              # enable/disable output [1]
+  flds_enable   = 0              # field output [1]
+  prtl_enable   = 1              # prtl output [1]
+  hst_enable  =  0
+  hst_interval  =  200
+  interval = 2
+  stride = 10
+
+  usr_enable = 0
+  usr_interval = 200
+  
+
+<plasma>
+			
+  ppc0  =  15
+  sigma  =  100
+  c_omp  =  50
+
+<particles>
+
+  nspec  =  2
+  maxptl1  =  1e8
+  m1  =  1
+  ch1  =  1
+  maxptl2  =  1e8
+  m2  =  1
+  ch2  =  -1  
+
+<radiation>
+  gamma_syn      = 0.14805         # determines the synchrotron cooling rate
+  emit_gamma_syn = 0.2104          # determines synchrotron photon peak energy
+  beta_rec       = 0.01           # fiducial number that goes into the definition of `gamma_syn`  
+  dens_limit     = 1000000 
+
+
+<problem>
+
+  B_0 = 1
+  psi = 1              # Angle of B_0 with x-axis
+  B_amplitude = 0.1
+  spread = 3000
+  mode = 0.0040 #0.0015
+  shift_gamma = 1
+  temperature = 1.9e-6 # k_b T / m_e c^2 # m_e c^2 = 511 keV # k_b T = 1e-4 to 0.1 keV
+  wA_wp = 0.01
+# init_x_boundary = 4500
+  ramp_width = 6
+  multiplicity_1 = 3
+  multiplicity_2 = 0.1
+  
+

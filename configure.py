@@ -23,6 +23,12 @@ flags_choices = ["intel", "generic"]
 rad_choices = ["no", "sync", "ic", "sync+ic"]
 clusters = ["frontera", "zaratan", "stellar", "ginsburg"]
 
+
+#name
+parser.add_argument(
+    "--exe", default="", help="string identifier for executable"
+)
+
 # system
 parser.add_argument(
     "--cluster",
@@ -95,6 +101,7 @@ user_group.add_argument(
 user_group.add_argument(
     "--unit", default=None, choices=unit_choices, help="select unit file"
 )
+
 
 # algorithms
 parser.add_argument(
@@ -320,13 +327,13 @@ else:
         makefile_options["COMPILER_FLAGS"] += "-mavx "
 
 if args["1d"]:
-    makefile_options["EXE_NAME"] = "tristan-mp1d"
+    makefile_options["EXE_NAME"] = "tristan-mp1d" + args["exe"]
     makefile_options["PREPROCESSOR_FLAGS"] += "-DoneD "
 elif args["2d"]:
-    makefile_options["EXE_NAME"] = "tristan-mp2d"
+    makefile_options["EXE_NAME"] = "tristan-mp2d" + args["exe"]
     makefile_options["PREPROCESSOR_FLAGS"] += "-DtwoD "
 elif args["3d"]:
-    makefile_options["EXE_NAME"] = "tristan-mp3d"
+    makefile_options["EXE_NAME"] = "tristan-mp3d" + args["exe"]
     makefile_options["PREPROCESSOR_FLAGS"] += "-DthreeD "
 
 if args["absorb"]:
