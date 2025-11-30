@@ -22,6 +22,7 @@ module m_mainloop
 #ifdef USROUTPUT
   use m_userfile, only: userOutput
 #endif
+  use m_moving_window, only: moving_window_step
   use m_errors
 
   ! extra physics
@@ -268,6 +269,14 @@ contains
       ! User defined boundary conditions for particles
       call startTimer(9)
       call userParticleBoundaryConditions(timestep)
+      call clearGhostParticles()
+      call flushTimer(9)
+      !.................................................
+
+      !-------------------------------------------------
+      ! Moving window shift
+      call startTimer(9)
+      call moving_window_step(timestep)
       call clearGhostParticles()
       call flushTimer(9)
       !.................................................
