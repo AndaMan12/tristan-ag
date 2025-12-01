@@ -21,10 +21,10 @@
 
 <moving_window>
 
-  use_moving_window = 1
-  mw_shift_start    = 2000
-  mw_shift_interval = 25
-  mw_ncells         = 5
+  movwin       = 1
+  shiftstart   = 2000
+  shiftinterval = 20
+  movwingam    = 5.0   # gamma of the window (beta~0.98); set <1 to supply beta directly
 
 <algorithm>
 

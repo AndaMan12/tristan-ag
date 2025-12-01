@@ -16,7 +16,8 @@ module m_userfile
   !--- PRIVATE variables -----------------------------------------!
   real, private :: B_0, B_amp, mode, spread, shift_gamma, TT, psi, mult1, mult2
   logical, private :: use_moving_window = .false.
-  integer, private :: mw_shift_start = 0, mw_shift_interval = 0, mw_ncells = 0
+  integer, private :: mw_shift_start = 0, mw_shift_interval = 0
+  real(kind=dprec), private :: mw_speed = 0.0, mw_gamma_param = 0.0
   real, private :: cached_weight_factor = 1.0, cached_max_density = 0.0
   real, private :: cached_pos_tot_dens = 0.0, cached_ele_tot_dens = 0.0
   real, private :: cached_jA_ec_max = 0.0
@@ -41,15 +42,40 @@ contains
     call getInput('problem', 'multiplicity_1', mult1)
     call getInput('problem', 'multiplicity_2', mult2)
     call getInput('problem', 'ramp_width', ramp_width)
-    call getInput('moving_window', 'use_moving_window', use_moving_window, .false.)
-    call getInput('moving_window', 'mw_shift_start', mw_shift_start, 0)
-    call getInput('moving_window', 'mw_shift_interval', mw_shift_interval, 0)
-    call getInput('moving_window', 'mw_ncells', mw_ncells, 0)
+    integer :: movwin_flag
+
+    call getInput('moving_window', 'movwin', movwin_flag, 0)
+    call getInput('moving_window', 'shiftstart', mw_shift_start, 0)
+    call getInput('moving_window', 'shiftinterval', mw_shift_interval, 0)
+    call getInput('moving_window', 'movwingam', mw_gamma_param, 0.0)
+    
+    use_moving_window = (movwin_flag == 1)
+    mw_speed = compute_window_speed(mw_gamma_param)
     ! call getInput('problem', 'init_x_boundary', init_x_boundary)
     !AG: Overriding given init x boundary from input (exception case...remove later)
     init_x_boundary = int(5 * M_PI / mode) + 1
     fin_x_boundary = init_x_boundary + int(ramp_width * 2 * M_PI / mode)
   end subroutine userReadInput
+
+  real(kind=dprec) function compute_window_speed(gamma_like)
+    implicit none
+    real(kind=dprec), intent(in) :: gamma_like
+    real(kind=dprec) :: gamma_val
+
+    if (.not. use_moving_window) then
+      compute_window_speed = 0.0
+      return
+    end if
+
+    if (gamma_like > 10000.0d0) then
+      compute_window_speed = CC
+    else if (gamma_like < 1.0d0) then
+      compute_window_speed = CC * max(gamma_like, 0.0d0)
+    else
+      gamma_val = max(gamma_like, 1.0d0)
+      compute_window_speed = CC * sqrt(1.0d0 - 1.0d0 / (gamma_val * gamma_val))
+    end if
+  end function compute_window_speed
 
   function b_wave(x_glob, y_glob, z_glob) !AG: Waveform pulse through here!!
     real, intent(in), optional :: x_glob, y_glob, z_glob

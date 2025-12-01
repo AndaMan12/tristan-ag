@@ -14,7 +14,8 @@ module m_userfile
 
   !--- PRIVATE variables -----------------------------------------!
   logical :: use_moving_window = .false.
-  integer :: mw_shift_start = 0, mw_shift_interval = 0, mw_ncells = 0
+  integer :: mw_shift_start = 0, mw_shift_interval = 0
+  real(kind=dprec) :: mw_speed = 0.0, mw_gamma_param = 0.0
 
   !...............................................................!
 
@@ -25,11 +26,36 @@ contains
   !--- initialization -----------------------------------------!
   subroutine userReadInput()
     implicit none
-    call getInput('moving_window', 'use_moving_window', use_moving_window, .false.)
-    call getInput('moving_window', 'mw_shift_start', mw_shift_start, 0)
-    call getInput('moving_window', 'mw_shift_interval', mw_shift_interval, 0)
-    call getInput('moving_window', 'mw_ncells', mw_ncells, 0)
+    integer :: movwin_flag
+
+    call getInput('moving_window', 'movwin', movwin_flag, 0)
+    call getInput('moving_window', 'shiftstart', mw_shift_start, 0)
+    call getInput('moving_window', 'shiftinterval', mw_shift_interval, 0)
+    call getInput('moving_window', 'movwingam', mw_gamma_param, 0.0)
+
+    use_moving_window = (movwin_flag == 1)
+    mw_speed = compute_window_speed(mw_gamma_param)
   end subroutine userReadInput
+
+  real(kind=dprec) function compute_window_speed(gamma_like)
+    implicit none
+    real(kind=dprec), intent(in) :: gamma_like
+    real(kind=dprec) :: gamma_val
+
+    if (.not. use_moving_window) then
+      compute_window_speed = 0.0
+      return
+    end if
+
+    if (gamma_like > 10000.0d0) then
+      compute_window_speed = CC
+    else if (gamma_like < 1.0d0) then
+      compute_window_speed = CC * max(gamma_like, 0.0d0)
+    else
+      gamma_val = max(gamma_like, 1.0d0)
+      compute_window_speed = CC * sqrt(1.0d0 - 1.0d0 / (gamma_val * gamma_val))
+    end if
+  end function compute_window_speed
 
 #ifdef PRTLPAYLOADS
   elemental subroutine usrSetPhPld(u0, v0, w0, over_e_temp, incr_pld1, incr_pld2, incr_pld3)
