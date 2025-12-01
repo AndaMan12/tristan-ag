@@ -6,10 +6,15 @@ module m_moving_window
   use m_fields
   use m_particles
   use m_particlelogistics, only: reallocTileSize, allocateParticlesOnEmptyTile
-  use m_userfile, only: use_moving_window, mw_shift_start, mw_shift_interval, mw_speed, userFillNewRegion
+  use m_readinput, only: getInput
+  use m_userfile, only: userFillNewRegion
   implicit none
 
   real(kind=dprec), save :: mw_residual_shift = 0.0d0
+  logical, save :: mw_initialized = .false.
+  logical, save :: use_moving_window = .false.
+  integer, save :: mw_shift_start = 0, mw_shift_interval = 0
+  real(kind=dprec), save :: mw_speed = 0.0d0, mw_gamma_param = 0.0d0
 
   private :: shift_fields, shift_particles, refill_new_region, initialize_tile, append_to_tile, clear_tile
 contains
@@ -18,6 +23,8 @@ contains
     integer, intent(in) :: it
     real(kind=dprec) :: shift_accum
     integer :: shift_cells
+
+    if (.not. mw_initialized) call initialize_moving_window_config()
 
     if (.not. use_moving_window) return
     if (it < mw_shift_start) return
@@ -42,6 +49,31 @@ contains
 
     call refill_new_region(shift_cells)
   end subroutine moving_window_step
+
+  subroutine initialize_moving_window_config()
+    implicit none
+    integer :: movwin_flag
+
+    call getInput('moving_window', 'movwin', movwin_flag, 0)
+    call getInput('moving_window', 'shiftstart', mw_shift_start, 0)
+    call getInput('moving_window', 'shiftinterval', mw_shift_interval, 0)
+    call getInput('moving_window', 'movwingam', mw_gamma_param, 0.0d0)
+
+    use_moving_window = (movwin_flag == 1)
+    if (use_moving_window) then
+      if (mw_gamma_param > 10000.0d0) then
+        mw_speed = CC
+      else if (mw_gamma_param < 1.0d0) then
+        mw_speed = CC * max(mw_gamma_param, 0.0d0)
+      else
+        mw_speed = CC * sqrt(1.0d0 - 1.0d0 / (mw_gamma_param * mw_gamma_param))
+      end if
+    else
+      mw_speed = 0.0d0
+    end if
+
+    mw_initialized = .true.
+  end subroutine initialize_moving_window_config
 
   subroutine shift_fields(shift)
     implicit none
@@ -323,11 +355,15 @@ contains
   subroutine refill_new_region(shift)
     implicit none
     integer, intent(in) :: shift
-    real(kind=dprec) :: xmin, xmax
+    real(kind=dprec) :: xmin_d, xmax_d
+    real :: xmin, xmax
 
     if (.not. associated(this_meshblock % ptr % neighbor(1, 0, 0) % ptr)) then
-      xmin = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - shift, kind=dprec)
-      xmax = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - 1, kind=dprec)
+      xmin_d = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - shift, kind=dprec)
+      xmax_d = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - 1, kind=dprec)
+
+      xmin = REAL(xmin_d)
+      xmax = REAL(xmax_d)
 
       call userFillNewRegion(xmin, xmax)
     end if
