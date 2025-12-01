@@ -15,7 +15,13 @@ module m_userfile
 
   !--- PRIVATE variables -----------------------------------------!
   real, private :: B_0, B_amp, mode, spread, shift_gamma, TT, psi, mult1, mult2
-  real, private :: jA_ec_max, weight
+  logical, private :: use_moving_window = .false.
+  integer, private :: mw_shift_start = 0, mw_shift_interval = 0
+  real(kind=dprec), private :: mw_speed = 0.0, mw_gamma_param = 0.0
+  real, private :: cached_weight_factor = 1.0, cached_max_density = 0.0
+  real, private :: cached_pos_tot_dens = 0.0, cached_ele_tot_dens = 0.0
+  real, private :: cached_jA_ec_max = 0.0
+  logical, private :: profile_cache_ready = .false.
   integer, private :: init_x_boundary, fin_x_boundary, ramp_width ! ramp width in units of Alfven wavelengths
   !...............................................................!
 
@@ -34,13 +40,42 @@ contains
     call getInput('problem', 'shift_gamma', shift_gamma)
     call getInput('problem', 'temperature', TT)
     call getInput('problem', 'multiplicity_1', mult1)
-    call getInput('problem', 'multiplicity_2', mult2)  
-    call getInput('problem', 'ramp_width', ramp_width)  
+    call getInput('problem', 'multiplicity_2', mult2)
+    call getInput('problem', 'ramp_width', ramp_width)
+    integer :: movwin_flag
+
+    call getInput('moving_window', 'movwin', movwin_flag, 0)
+    call getInput('moving_window', 'shiftstart', mw_shift_start, 0)
+    call getInput('moving_window', 'shiftinterval', mw_shift_interval, 0)
+    call getInput('moving_window', 'movwingam', mw_gamma_param, 0.0)
+    
+    use_moving_window = (movwin_flag == 1)
+    mw_speed = compute_window_speed(mw_gamma_param)
     ! call getInput('problem', 'init_x_boundary', init_x_boundary)
     !AG: Overriding given init x boundary from input (exception case...remove later)
     init_x_boundary = int(5 * M_PI / mode) + 1
     fin_x_boundary = init_x_boundary + int(ramp_width * 2 * M_PI / mode)
   end subroutine userReadInput
+
+  real(kind=dprec) function compute_window_speed(gamma_like)
+    implicit none
+    real(kind=dprec), intent(in) :: gamma_like
+    real(kind=dprec) :: gamma_val
+
+    if (.not. use_moving_window) then
+      compute_window_speed = 0.0
+      return
+    end if
+
+    if (gamma_like > 10000.0d0) then
+      compute_window_speed = CC
+    else if (gamma_like < 1.0d0) then
+      compute_window_speed = CC * max(gamma_like, 0.0d0)
+    else
+      gamma_val = max(gamma_like, 1.0d0)
+      compute_window_speed = CC * sqrt(1.0d0 - 1.0d0 / (gamma_val * gamma_val))
+    end if
+  end function compute_window_speed
 
   function b_wave(x_glob, y_glob, z_glob) !AG: Waveform pulse through here!!
     real, intent(in), optional :: x_glob, y_glob, z_glob
@@ -167,7 +202,48 @@ contains
     ! endif
 
   end subroutine bg_density_scaled
-    
+
+  subroutine ensure_profile_cache()
+    implicit none
+    real :: xg, sx_glob
+    real :: jA_ec, n_0_local, k, beta_plus_val, beta_minus_val
+    real :: n_plus_val, n_minus_val
+
+    if (profile_cache_ready) return
+
+    sx_glob = REAL(global_mesh%sx)
+
+    cached_jA_ec_max = 0.0
+    do xg = 0, sx_glob
+      jA_ec = -(db_wave_dx(xg, 0.5, 0.5) * sin(psi) * B_norm)/unit_ch
+      cached_jA_ec_max = max(cached_jA_ec_max, abs(jA_ec))
+    end do
+
+    cached_pos_tot_dens = 0.0
+    cached_ele_tot_dens = 0.0
+    cached_max_density = 0.0
+    do xg = 0, sx_glob
+      call bg_density_scaled(mult1, mult2, sx_glob, xg, n_0_local)
+      n_0_local = n_0_local * cached_jA_ec_max
+
+      jA_ec = -(db_wave_dx(xg, 0.5, 0.5) * sin(psi) * B_norm)/unit_ch
+      if (n_0_local .ne. 0.0) then
+        k = jA_ec / n_0_local
+      else
+        k = 0.0
+      end if
+      call solve_for_beta(k, beta_plus_val, beta_minus_val)
+      n_plus_val = n_0_local / (1.0 - beta_plus_val)
+      n_minus_val = n_0_local / (1.0 - beta_minus_val)
+      cached_pos_tot_dens = cached_pos_tot_dens + n_plus_val
+      cached_ele_tot_dens = cached_ele_tot_dens + n_minus_val
+      cached_max_density = max(cached_max_density, n_plus_val, n_minus_val)
+    end do
+
+    cached_weight_factor = (cached_pos_tot_dens + cached_ele_tot_dens) / (ppc0 * sx_glob)
+    profile_cache_ready = .true.
+  end subroutine ensure_profile_cache
+
 
   !--- Particle Initialization ---!
   subroutine userInitParticles()
@@ -207,14 +283,9 @@ contains
     sx_glob = global_mesh%sx
     sy_glob = global_mesh%sy
 
-    ! Step 1: Compute jA_ec_max over the entire grid
-    jA_ec_max = 0.0  ! Initialize jA_ec_max
-
-    do xg = 0, sx_glob
-        ! Compute the current density jA_ec at this position
-        jA_ec = -(db_wave_dx(xg, 0.5, 0.5) * sin(psi) * B_norm)/unit_ch
-        jA_ec_max = max(jA_ec_max, abs(jA_ec))  ! Store the maximum value of jA_ec
-    end do
+    call ensure_profile_cache()
+    jA_ec_max = cached_jA_ec_max
+    weight_factor = cached_weight_factor
     print *, "Max critical density (jA/ec max):", jA_ec_max
 
     ! ! Step 2: Compute the max density over the entire grid (after jA_ec_max is known)
@@ -252,30 +323,9 @@ contains
 
     ele_tot_dens = 0.0
     pos_tot_dens = 0.0
-    max_density = 0.0  ! Initialize the maximum density value
-
-    do xg = 0, sx_glob
-      call bg_density_scaled(mult1, mult2, sx_glob, xg, n_0_local) 
-      n_0_local = n_0_local * jA_ec_max     
-
-      ! Calculate k = jA_ec / n_0
-      jA_ec = -(db_wave_dx(xg, 0.5, 0.5) * sin(psi) * B_norm)/unit_ch
-      k = jA_ec / (n_0_local)
-
-      ! Solve for beta_plus and beta_minus
-      call solve_for_beta(k, beta_plus_val, beta_minus_val)
-
-      ! Compute n_plus and n_minus based on beta values
-      n_plus_val = n_0_local / (1.0 - beta_plus_val)
-      n_minus_val = n_0_local / (1.0 - beta_minus_val)
-
-      pos_tot_dens = pos_tot_dens + n_plus_val
-      ele_tot_dens = ele_tot_dens + n_minus_val
-      ! Find the maximum density between positrons and electrons at this point
-      max_density = max(max_density, n_plus_val, n_minus_val)
-    end do
-    
-    weight_factor = (pos_tot_dens + ele_tot_dens) / (ppc0 * sx_glob)
+    pos_tot_dens = cached_pos_tot_dens
+    ele_tot_dens = cached_ele_tot_dens
+    max_density = cached_max_density
     print *, "Weight factor:", weight_factor
     
     ! Step 4: Inject positrons and electrons using normalized densities and rejection sampling
@@ -290,7 +340,7 @@ contains
 
         ! Calculate the density at this random position        
         
-        call bg_density_scaled(mult1, mult2, sx_glob, xg, n_0_local) 
+        call bg_density_scaled(mult1, mult2, sx_glob, xg, n_0_local)
         n_0_local = n_0_local * jA_ec_max
 
         jA_ec = -(db_wave_dx(xg, yg, 0.5) * sin(psi) * B_norm) / unit_ch
@@ -614,423 +664,147 @@ contains
     else
       updateB_ = .true.
     end if
-        
+
   end subroutine userFieldBoundaryConditions
-  
+
+  subroutine userFillNewRegion(xmin, xmax)
+    implicit none
+    real, intent(in) :: xmin, xmax
+    real :: jA_ec_max, max_density, pos_tot_dens, ele_tot_dens, weight_factor
+    real :: slab_min, slab_max, slab_extent, sy_glob
+    real :: xg, yg, density_normalized, kappa, beta_plus, beta_minus
+    real :: n_plus, n_minus, n_0_local, jA_ec
+    integer :: npart, accepted_particles
+    type(maxwellian) :: mwl
+    real :: u_parr, v_perp, u_, v_, w_, gamma
+    integer :: i, j, k, i_glob, j_glob, k_glob
+    real :: e_parr1, e_parr2
+
+    call ensure_profile_cache()
+
+    jA_ec_max = cached_jA_ec_max
+    max_density = cached_max_density
+    pos_tot_dens = cached_pos_tot_dens
+    ele_tot_dens = cached_ele_tot_dens
+    weight_factor = cached_weight_factor
+
+    slab_min = max(xmin, REAL(this_meshblock % ptr % x0))
+    slab_max = min(xmax, REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - 1))
+
+    if (slab_max < slab_min) return
+
+    do i = 0, this_meshblock % ptr % sx - 1
+      i_glob = i + this_meshblock % ptr % x0
+      if ((REAL(i_glob) < slab_min) .or. (REAL(i_glob) > slab_max)) cycle
+
+      e_parr1 = e_parr(REAL(i_glob), jA_ec_max)
+      e_parr2 = e_parr(REAL(i_glob - 0.5), jA_ec_max)
+
+      do j = 0, this_meshblock % ptr % sy - 1
+        j_glob = j + this_meshblock % ptr % y0
+        do k = 0, this_meshblock % ptr % sz - 1
+          k_glob = k + this_meshblock % ptr % z0
+          ex(i, j, k) = -sin(psi) * b_wave(REAL(i_glob), REAL(j_glob - 0.5), REAL(k_glob - 0.5)) + cos(psi) * e_parr1
+          ey(i, j, k) =  cos(psi) * b_wave(REAL(i_glob - 0.5), REAL(j_glob), REAL(k_glob - 0.5)) + sin(psi) * e_parr2
+          bz(i, j, k) = b_wave(REAL(i_glob), REAL(j_glob), REAL(k_glob - 0.5))
+        end do
+      end do
+    end do
+
+    slab_extent = slab_max - slab_min + 1.0
+    if (slab_extent <= 0.0) return
+
+    sy_glob = REAL(global_mesh % sy)
+    mwl % dimension = 2
+    mwl % generated = .false.
+    mwl % temperature = TT
+    mwl % shift_flag = .true.
+
+    npart = INT(slab_extent * sy_glob * ppc0 * pos_tot_dens / (pos_tot_dens + ele_tot_dens))
+    accepted_particles = 0
+    do while (accepted_particles < npart)
+      xg = slab_min + random(dseed) * slab_extent
+      yg = random(dseed) * sy_glob
+
+      call bg_density_scaled(mult1, mult2, REAL(global_mesh % sx), xg, n_0_local)
+      n_0_local = n_0_local * jA_ec_max
+
+      jA_ec = -(db_wave_dx(xg, yg, 0.5) * sin(psi) * B_norm) / unit_ch
+      if (n_0_local .ne. 0.0) then
+        kappa = jA_ec / n_0_local
+      else
+        kappa = 0.0
+      end if
+      call solve_for_beta(kappa, beta_plus, beta_minus)
+
+      n_plus = n_0_local / (1.0 - beta_plus)
+      density_normalized = n_plus / max_density
+
+      if (random(dseed) <= density_normalized) then
+        accepted_particles = accepted_particles + 1
+
+        gamma = 1.0 / sqrt(1.0 - beta_plus**2)
+        if (abs(beta_plus) .lt. 1e-3) then
+          mwl % shift_gamma = 1.0
+          mwl % shift_dir = 1
+        else
+          mwl % shift_gamma = gamma
+          mwl % shift_dir = INT(sign(1.0, beta_plus))
+        end if
+        call generateFromMaxwellian(mwl, u_parr, v_perp, w_)
+
+        u_ = u_parr * cos(psi) - v_perp * sin(psi)
+        v_ = u_parr * sin(psi) + v_perp * cos(psi)
+
+        call injectParticleGlobally(1, xg, yg, 0.5, u_, v_, w_, weight_factor)
+      end if
+    end do
+
+    npart = INT(slab_extent * sy_glob * ppc0 * ele_tot_dens / (pos_tot_dens + ele_tot_dens))
+    accepted_particles = 0
+    do while (accepted_particles < npart)
+      xg = slab_min + random(dseed) * slab_extent
+      yg = random(dseed) * sy_glob
+
+      call bg_density_scaled(mult1, mult2, REAL(global_mesh % sx), xg, n_0_local)
+      n_0_local = n_0_local * jA_ec_max
+
+      jA_ec = -(db_wave_dx(xg, yg, 0.5) * sin(psi) * B_norm) / unit_ch
+      if (n_0_local .ne. 0.0) then
+        kappa = jA_ec / n_0_local
+      else
+        kappa = 0.0
+      end if
+      call solve_for_beta(kappa, beta_plus, beta_minus)
+
+      n_minus = n_0_local / (1.0 - beta_minus)
+      density_normalized = n_minus / max_density
+
+      if (random(dseed) <= density_normalized) then
+        accepted_particles = accepted_particles + 1
+
+        gamma = 1.0 / sqrt(1.0 - beta_minus**2)
+        if (abs(beta_minus) .lt. 1e-3) then
+          mwl % shift_gamma = 1.0
+          mwl % shift_dir = 1
+        else
+          mwl % shift_gamma = gamma
+          mwl % shift_dir = INT(sign(1.0, beta_minus))
+        end if
+        call generateFromMaxwellian(mwl, u_parr, v_perp, w_)
+
+        u_ = u_parr * cos(psi) - v_perp * sin(psi)
+        v_ = u_parr * sin(psi) + v_perp * cos(psi)
+
+        call injectParticleGlobally(2, xg, yg, 0.5, u_, v_, w_, weight_factor)
+      end if
+    end do
+  end subroutine userFillNewRegion
+
 #include "optional.F"
 
-! !--- user-specific output -----------------------------------!
-! #ifdef USROUTPUT
-!   subroutine userOutput(step)
-!     implicit none
-!     integer, optional, intent(in) :: step
-!     integer :: root_rank = 0
-!     integer :: i, j, k, i_glob, j_glob, k_glob
-!     integer :: ierr, xnum, ynum, znum
-!     real    :: e_temp = 0
-!     real, allocatable :: eparr_glob(:)
-!     real, allocatable :: eparr_av(:)
-
-!     xnum = INT(global_mesh%sx)
-!     ynum = INT(global_mesh%sy)
-!     znum = INT(global_mesh%sz)    
-
-!     allocate(eparr_av(xnum))    
-!     allocate(eparr_glob(xnum))    
-
-!     ! eparr_av(:) = sum( sum(cos(psi) * ex(:, :, :) + sin(psi) * ey(:, :, :), &
-!     !                   dim = 3), dim = 2 )/(INT(global_mesh%sy) * INT(global_mesh%sz)) 
-
-!     do i = 0, this_meshblock % ptr % sx - 1
-!       i_glob = i + this_meshblock % ptr % x0
-!       e_temp = 0
-!       do j = 0, this_meshblock % ptr % sy - 1
-!         j_glob = j + this_meshblock % ptr % y0
-!         do k = 0, this_meshblock % ptr % sz - 1
-!           k_glob = k + this_meshblock % ptr % z0
-!           e_temp = e_temp + cos(psi) * ex(i, j, k) + sin(psi) * ey(i, j, k)      
-!         end do
-!       end do
-!       eparr_av(i_glob + 1) = e_temp / (ynum * znum)
-!     end do
-
-!     call MPI_REDUCE(eparr_av, eparr_glob, xnum, default_mpi_real, MPI_SUM, root_rank, MPI_COMM_WORLD, ierr)
-    
-!     if (mpi_rank .eq. root_rank) then
-!       call writeUsrOutputTimestep(step)
-!       call writeUsrOutputArray('eparr_av', eparr_glob)
-      
-!       ! you may add as many of these outputs as you want
-!       call writeUsrOutputEnd()
-!     end if
-!   end subroutine userOutput
-
-!   logical function userExcludeParticles(s, ti, tj, tk, p)
-!     implicit none
-!     integer, intent(in) :: s, ti, tj, tk, p
-!     userExcludeParticles = .true.
-!   end function userExcludeParticles
-
-! #endif
-
-  !............................................................!
-end module m_userfile
 
 
 
 
-
-
-
-
-
-
-! module m_userfile
-!   use m_globalnamespace
-!   use m_aux
-!   use m_readinput
-!   use m_domain
-!   use m_particles
-!   use m_fields
-!   use m_thermalplasma
-!   use m_particlelogistics
-!   implicit none
-
-!   !--- PRIVATE variables -----------------------------------------!
-!   real, private :: B_0, B_amp, mode, spread, shift_gamma, TT, psi, mult1, mult2, beta
-!   real, private :: jA_ec_max, weight
-!   integer, private :: init_x_boundary
-!   !...............................................................!
-
-!   !--- PRIVATE functions -----------------------------------------!
-!   private :: userSpatialDistribution
-!   !...............................................................!
-! contains
-!   !--- initialization -----------------------------------------!
-!   subroutine userReadInput()
-!     implicit none
-!     call getInput('problem', 'B_0', B_0)
-!     call getInput('problem', 'psi', psi)
-!     call getInput('problem', 'B_amplitude', B_amp)
-!     call getInput('problem', 'spread', spread)
-!     call getInput('problem', 'mode', mode)
-!     call getInput('problem', 'shift_gamma', shift_gamma)
-!     call getInput('problem', 'temperature', TT)
-!     call getInput('problem', 'multiplicity_1', mult1)
-!     call getInput('problem', 'multiplicity_2', mult2)
-!     ! call getInput('problem', 'weights', weight)
-!     call getInput('problem', 'beta', beta)
-!     call getInput('problem', 'init_x_boundary', init_x_boundary)
-!   end subroutine userReadInput
-
-!   function b_wave(x_glob, y_glob, z_glob) !AG: Waveform pulse through here!!
-!     real, intent(in), optional :: x_glob, y_glob, z_glob
-!     real :: b_wave
-
-!     b_wave = B_amp * sin(x_glob * mode) * exp(-0.5*(x_glob - 4*spread)**2 /spread**2)
-!   end function
-
-!   function db_wave_dx(x_glob, y_glob, z_glob) !AG: Waveform pulse gradient through here!!
-!     real, intent(in), optional :: x_glob, y_glob, z_glob
-!     real :: db_wave_dx
-
-!     db_wave_dx = (b_wave(x_glob + 1e-3, y_glob, z_glob) - b_wave(x_glob - 1e-3, y_glob, z_glob))/(2e-3)
-!   end function
-
-!   function find_max_abs_value(x_start, x_end, x_step, y_glob, z_glob) result(max_abs_x)
-!     real, intent(in) :: x_start, x_end, x_step, y_glob, z_glob
-!     real :: max_abs_x
-!     real :: x_current, max_abs_value, db_wave_current
-
-!     ! Initialize the search
-!     max_abs_value = 0.0
-!     max_abs_x = x_start
-!     x_current = x_start
-
-!     ! Loop through x values to find the maximum absolute value of db_wave_dx
-!     do while (x_current <= x_end)
-!         ! Compute the current db_wave_dx and its absolute value
-!         db_wave_current = abs(db_wave_dx(x_current, y_glob, z_glob))
-
-!         ! Check if this is the largest absolute value so far
-!         if (db_wave_current > max_abs_value) then
-!             max_abs_value = db_wave_current
-!             max_abs_x = x_current
-!         end if
-
-!         ! Move to the next x value
-!         x_current = x_current + x_step
-!     end do
-!   end function
-
-  
-!   function userSpatialDistribution(x_glob, y_glob, z_glob, &
-!     dummy1, dummy2, dummy3)
-!   real :: userSpatialDistribution
-!   real, intent(in), optional :: x_glob, y_glob, z_glob
-!   real, intent(in), optional :: dummy1, dummy2, dummy3
-!   real           :: sx_glob, jA_ec
-
-!   sx_glob = REAL(global_mesh%sx)
-!   jA_ec = (-db_wave_dx(x_glob, y_glob, z_glob) * sin(psi) * B_norm)/unit_ch
-
-!   if (x_glob <= init_x_boundary) then
-!   if (dummy1 .eq. 1.0) then  ! AG: positron density distribution    
-!   userSpatialDistribution = (mult1 * dummy2 + 0.5 * (1/beta + 1) * jA_ec)/(mult1 * dummy2 + 0.5 * (1/beta + 1) * dummy2)
-!   else                  ! AG: electron density distribution
-!   userSpatialDistribution = (mult1 * dummy2 + 0.5 * (1/beta - 1) * jA_ec)/(mult1 * dummy2 + 0.5 * (1/beta + 1) * dummy2)
-!   endif
-
-!   else                    ! AG: density ramp down outside initialisation region
-!   userSpatialDistribution = 1/(1 + 0.5 * (1/beta + 1) / mult1) * &
-!                             (1 - (x_glob - init_x_boundary)/(sx_glob - init_x_boundary) * (1 - mult2/mult1))
-!   endif
-!   return
-!   end function
-
-!   subroutine userInitParticles()
-!     implicit none
-!     integer :: npart, accepted_particles
-!     real :: xg, yg, u_,  v_,  w_, gamma, density_value
-!     real :: sx_glob, sy_glob
-!     real :: u_acceptance
-!     procedure(spatialDistribution), pointer :: spat_distr_ptr => null()
-!     spat_distr_ptr => userSpatialDistribution
-    
-!     sx_glob = global_mesh%sx
-!     sy_glob = global_mesh%sy
-    
-!     ! AG: Critical number density for the pulse being setup.
-!     jA_ec_max = find_max_abs_value(0.0, REAL(init_x_boundary), 0.01, 0.0, 0.0) * sin(psi) * B_norm / unit_ch
-!     ! AG: Weight of each macroparticle to normalise the number density.
-!     weight = (mult1 * jA_ec_max + 0.5 * (1/beta + 1) * jA_ec_max)
-
-!     npart = INT(sx_glob * sy_glob * 0.50 * ppc0)
-
-!     accepted_particles = 0
-!     ! AG: Loop for positrons
-!     ! Loop until we have accepted the required number of particles
-!     do while (accepted_particles < npart) 
-!         ! Generate random positions for xg and yg (uniformly distributed)        
-!         xg = random(dseed) * sx_glob        
-!         yg = random(dseed) * sy_glob
-
-!         ! Evaluate the PDF at this random position using userSpatialDistribution
-!         density_value = spat_distr_ptr(x_glob=xg, y_glob=yg, z_glob=0.5, dummy1 = 1.0, dummy2 = jA_ec_max)
-
-!         ! Generate a random acceptance threshold between 0 and 1
-!         u_acceptance = random(dseed)
-
-!         ! If the random number is less than the PDF value, accept the particle
-!         if (u_acceptance <= density_value) then
-!             accepted_particles = accepted_particles + 1
-
-!             ! Set velocities as functions of the position (not needed in this try)
-
-!             ! Set velocities as functions of the position (not needed in this try)
-!           if (xg < init_x_boundary) then
-!             gamma = 1/sqrt(1 - beta**2)
-!             u_ = gamma * beta * cos(psi)
-!             v_ = gamma * beta * sin(psi)
-!             w_ = 0
-!           else
-!             u_ = 0
-!             v_ = 0
-!             w_ = 0
-!           endif
-!             ! Inject the particle into the system
-!             call injectParticleGlobally(1, xg, yg, 0.5, u_, v_, w_, weight)
-!         end if
-!     end do
-
-!     accepted_particles = 0
-    
-!     ! AG: Loop for electrons
-!     do while (accepted_particles < npart) 
-!       ! Generate random positions for xg and yg (uniformly distributed)        
-!       xg = random(dseed) * sx_glob        
-!       yg = random(dseed) * sy_glob
-
-!       ! Evaluate the PDF at this random position using userSpatialDistribution
-!       density_value = spat_distr_ptr(x_glob=xg, y_glob=yg, z_glob=0.5, dummy1 = 2.0, dummy2 = jA_ec_max)
-
-!       ! Generate a random acceptance threshold between 0 and 1
-!       u_acceptance = random(dseed)
-
-!       ! If the random number is less than the PDF value, accept the particle
-!       if (u_acceptance <= density_value) then
-!           accepted_particles = accepted_particles + 1
-
-!           ! Set velocities as functions of the position (not needed in this try)
-!           if (xg < init_x_boundary) then
-!             gamma = 1/sqrt(1 - beta**2)
-!             u_ = -gamma * beta * cos(psi)
-!             v_ = -gamma * beta * sin(psi)
-!             w_ = 0
-!           else
-!             u_ = 0
-!             v_ = 0
-!             w_ = 0
-!           endif
-!           ! Inject the particle into the system
-!           call injectParticleGlobally(2, xg, yg, 0.5, u_, v_, w_, weight)
-!       end if
-!   end do
-
-!   end subroutine userInitParticles
-
-  
-!   ! subroutine userInitParticles()
-!   !   implicit none
-!   !   ! //AG: Initialising variables for injecting thermal plasma
-!   !   real           :: ne, np           ! no. density of electron and positron
-!   !   type(region)   :: fill_region      ! defines a region (on a domain or meshblock) where the plasma will be sprinkled
-!   !   real           :: sx_glob, sy_glob, sz_glob
-!   !   procedure(spatialDistribution), pointer :: spat_distr_ptr => null()
-!   !   spat_distr_ptr => userSpatialDistribution
-!   !   ! *************************************************************************************
-    
-!   !   ne = 0.5 * ppc0
-!   !   np = 0.5 * ppc0
-!   !   sx_glob = REAL(global_mesh%sx)
-!   !   sy_glob = REAL(global_mesh%sy)
-!   !   !sz_glob = REAL(global_mesh%sz)
-!   !   fill_region%x_min = REAL(0)
-!   !   fill_region%x_max = REAL(sx_glob)
-!   !   fill_region%y_min = REAL(0)
-!   !   fill_region%y_max = REAL(sy_glob)
-!   !   !fill_region%z_min = REAL(0)
-!   !   !fill_region%z_max = REAL(sz_glob)
-
-!   !   ! //AG: Parameters of "fillRegionWithThermalPlasma()" for reference
-!   !   ! fillRegionWithThermalPlasma(fill_region, fill_species, num_species, ndens_sp, &
-!   !   ! temperature, shift_gamma, shift_dir, zero_current, &
-!   !   ! dimension, weights, spat_distr_ptr, &
-!   !   ! dummy1, dummy2, dummy3)
-
-!   !   ! filling the positrons...
-!   !   call fillRegionWithThermalPlasma(fill_region, fill_species = (/1/), num_species = 1,&
-!   !    ndens_sp = np, temperature = TT, shift_gamma = shift_gamma, shift_dir = +1, dimension = 2, &
-!   !    weights = weight, spat_distr_ptr = spat_distr_ptr)
-    
-!   !   ! filling the electrons...
-!   !   call fillRegionWithThermalPlasma(fill_region, fill_species = (/2/), num_species = 1,&
-!   !    ndens_sp = ne, temperature = TT, shift_gamma = shift_gamma, shift_dir = -1, dimension = 2, &
-!   !    weights = weight, spat_distr_ptr = spat_distr_ptr)
-
-! !     ! //AG: Old code to inject particles one by one with a random number generator....
-
-! ! !     u_ = shift_gamma * sqrt(1.0 - shift_gamma**(-2))
-! ! !     v_ = 0.0
-! ! !     w_ = 0.0
-
-! ! !     npart = INT(global_mesh % sx * global_mesh % sy * 0.5 * ppc0)
-! ! !     do n = 1, npart
-! ! !       xg = random(dseed) * global_mesh % sx
-! ! !       ! //AG: exciting a particular mode by displacing particles as amp * sin (2*pi*m*xg / L ) 
-! ! !       ! xg = xg + amplitude * sin(2.0 * acos(-1.0) * mode * xg / global_mesh % sx)
-! ! !       yg = 0.5
-! ! ! #ifdef twoD
-! ! !       yg = random(dseed) * global_mesh % sy
-! ! ! #endif
-! ! !       call injectParticleGlobally(1, xg, yg, 0.5, u_, v_, w_)
-! ! !       call injectParticleGlobally(2, xg, yg, 0.5, -u_, v_, w_)
-! ! !     end do
-! !   end subroutine userInitParticles
-
-!   subroutine userInitFields()
-!     implicit none
-!     integer :: i, j, k
-!     integer :: i_glob, j_glob, k_glob
-!     real :: sx_glob, sy_glob
-!     real :: kx
-!     real :: ex_norm, ey_norm, ez_norm, exyz_norm
-!     real :: bx_norm, by_norm, bz_norm, bxyz_norm
-    
-!     sx_glob = REAL(global_mesh%sx)
-!     sy_glob = REAL(global_mesh%sy)
-    
-!     ex(:, :, :) = 0; ey(:, :, :) = 0; ez(:, :, :) = 0
-!     bx(:, :, :) = B_0 * cos(psi); by(:, :, :) = B_0 * sin(psi); bz(:, :, :) = 0
-
-!     kx = mode
-!     do i = 0, this_meshblock % ptr % sx - 1
-!       i_glob = i + this_meshblock % ptr % x0
-!       do j = 0, this_meshblock % ptr % sy - 1
-!         j_glob = j + this_meshblock % ptr % y0
-!         do k = 0, this_meshblock % ptr % sz - 1
-!           k_glob = k + this_meshblock % ptr % z0
-!           ex(i, j, k) = -sin(psi) * b_wave(REAL(i_glob), REAL(j_glob-0.5), REAL(k_glob-0.5))!B_amp * sin((i_glob) * kx) !* exp(-0.5*((i_glob) - 3*spread)**2 /spread**2)
-!           ey(i, j, k) =  cos(psi) * b_wave(REAL(i_glob-0.5), REAL(j_glob), REAL(k_glob-0.5))!B_amp * sin((i_glob - 0.5) * kx) !* exp(-0.5*((i_glob - 0.5) - 3*spread)**2 /spread**2)
-!           ! ez(i, j, k) = 0
-!           ! bx(i, j, k) = 0
-!           ! by(i, j, k) = 0
-!           bz(i, j, k) = b_wave(REAL(i_glob), REAL(j_glob), REAL(k_glob-0.5))!B_amp * sin(i_glob * kx) !* exp(-0.5*(i_glob - 3*spread)**2 /spread**2)
-!         end do
-!       end do
-!     end do
-
-!   end subroutine userInitFields
-!   !............................................................!
-
-!   !--- driving ------------------------------------------------!
-!   subroutine userCurrentDeposit(step)
-!     implicit none
-!     integer, optional, intent(in) :: step
-!     ! called after particles move and deposit ...
-!     ! ... and before the currents are added to the electric field
-!   end subroutine userCurrentDeposit
-
-!   subroutine userDriveParticles(step)
-!     implicit none
-!     integer, optional, intent(in) :: step
-!     ! ... dummy loop ...
-!     ! integer :: s, ti, tj, tk, p
-!     ! do s = 1, nspec
-!     !   do ti = 1, species(s)%tile_nx
-!     !     do tj = 1, species(s)%tile_ny
-!     !       do tk = 1, species(s)%tile_nz
-!     !         do p = 1, species(s)%prtl_tile(ti, tj, tk)%npart_sp
-!     !           ...
-!     !         end do
-!     !       end do
-!     !     end do
-!     !   end do
-!     ! end do
-!   end subroutine userDriveParticles
-!   !............................................................!
-
-!   !--- boundaries ---------------------------------------------!
-!   subroutine userParticleBoundaryConditions(step)
-!     implicit none
-!     integer, optional, intent(in) :: step
-!   end subroutine userParticleBoundaryConditions
-
-!   subroutine userFieldBoundaryConditions(step, updateE, updateB)
-!     implicit none
-!     integer :: i, j, k
-!     integer :: i_glob, j_glob, k_glob
-!     ! real :: kx, ky, kz
-
-!     integer, optional, intent(in) :: step
-!     logical, optional, intent(in) :: updateE, updateB
-!     logical :: updateE_, updateB_
-
-!     if (present(updateE)) then
-!       updateE_ = updateE
-!     else
-!       updateE_ = .true.
-!     end if
-
-!     if (present(updateB)) then
-!       updateB_ = updateB
-!     else
-!       updateB_ = .true.
-!     end if
-        
-!   end subroutine userFieldBoundaryConditions
-  
-! #include "optional.F"
-!   !............................................................!
-! end module m_userfile
 
