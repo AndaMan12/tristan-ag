@@ -5,8 +5,8 @@
 #SBATCH --mail-user=anindyaguria@iisc.ac.in
 #SBATCH -p normal
 #SBATCH -t 48:00:00  # dd-hh:mm:ss
-#SBATCH -N 20
-#SBATCH -n 2560
+#SBATCH -N 4
+#SBATCH -n 80
 #SBATCH --output=%x-%j.log
 
 # Load necessary modules
@@ -23,7 +23,7 @@ MULT2_VALUES=(0.1 )
 TT_VALUES=(1.9e-2 ) # Values for temperatures
 
 # Path to the master input file
-MASTER_INPUT=/work/10446/anindya_12/ls6/tristan_mp_v2/inputs/inputAG.2d_EM_wave_embed
+MASTER_INPUT=/work/10446/anindya_12/ls6/tristan_mp_v2/inputs/inputAG.2d_EM_wave_embed_mw
 PYTHON_SCRIPT=/work/10446/anindya_12/ls6/tristan_mp_v2/pyNotebooks/COMP_calc.py  # Ensure this script is in the correct directory
 
 for psi in "${PSI_VALUES[@]}"; do
@@ -35,6 +35,7 @@ for psi in "${PSI_VALUES[@]}"; do
 
       # Modify psi and multiplicity values in the input file
       sed -e "s/^\(\s*psi\s*=\s*\).*/\1$psi/" \
+          -e "s/^\(\s*movwingam\s*=\s*\).*/\1c($psi)/" \
           -e "s/^\(\s*multiplicity_1\s*=\s*\).*/\1$mul1/" \
           -e "s/^\(\s*multiplicity_2\s*=\s*\).*/\1$mul2/" \
           -e "s/^\(\s*temperature\s*=\s*\).*/\1$TT/" \
@@ -52,13 +53,13 @@ for psi in "${PSI_VALUES[@]}"; do
       RUN_TS=$(date +%Y%m%d_%H%M%S)
       LOGFILE="out_TSI_EM_psi${psi}_mul1${mul1}_mul2${mul2}_TT${TT}_${RUN_TS}.log"
 
-      srun /work/10446/anindya_12/ls6/tristan_mp_v2/bin/tristan-mp2d -i "$NEW_INPUT" > "$LOGFILE"
+#      srun /work/10446/anindya_12/ls6/tristan_mp_v2/bin/tristan-mp2d -i "$NEW_INPUT" > "$LOGFILE"
 
       # Move the results to the vault
-      OUTPUT_TAG="/scratch/10446/anindya_12/ls6/tristan_mp_v2/vault/output_psi${psi}_mul1_${mul1}_mul2_${mul2}_TT_${TT}_rad_drag"
-      mv "$NEW_INPUT" output
-      mv "$LOGFILE" output
-      mv output "$OUTPUT_TAG"
+#      OUTPUT_TAG="/scratch/10446/anindya_12/ls6/tristan_mp_v2/vault/output_psi${psi}_mul1_${mul1}_mul2_${mul2}_TT_${TT}_mov_win"
+#      mv "$NEW_INPUT" output
+#      mv "$LOGFILE" output
+#      mv output "$OUTPUT_TAG"
       done
     done
   done
