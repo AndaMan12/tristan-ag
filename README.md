@@ -34,6 +34,8 @@ sudo apt libhdf5-openmpi-dev hdf5-tools
 python3 configure.py --help
 # to configure the code (example)
 python3 configure.py -mpi08 -hdf5 --user=user_2d_rec -2d
+# to enable optional moving-window support at compile time
+python3 configure.py -movwin --user=user_2d_rec -2d
 # compile and link (-j compiles in parallel which is much faster)
 make all -j
 # executable will be in the `bin/` directory
@@ -46,6 +48,8 @@ Since `v2.8` we also support `cmake` for the code configuration.
 ```sh
 # to configure the code (example)
 cmake -B build -D mpi08=ON -D hdf5=ON -D user=user_2d_rec -D dim=2
+# enabling the moving window requires an explicit flag
+cmake -B build -D moving_window=ON -D user=user_2d_rec -D dim=2
 # compile
 cmake --build build -j
 # executable will be in the `build/src/` directory (*.xc extension)

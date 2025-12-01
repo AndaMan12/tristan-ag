@@ -154,6 +154,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-movwin", action="store_true", default=False, help="enable moving window support"
+)
+
+parser.add_argument(
     "-usroutput",
     action="store_true",
     default=False,
@@ -357,6 +361,8 @@ if args["blinne"]:
     makefile_options["PREPROCESSOR_FLAGS"] += "-DBLINNE "
 if args["payload"]:
     makefile_options["PREPROCESSOR_FLAGS"] += "-DPRTLPAYLOADS "
+if args["movwin"]:
+    makefile_options["PREPROCESSOR_FLAGS"] += "-DMOVING_WINDOW "
 if args["usroutput"]:
     makefile_options["PREPROCESSOR_FLAGS"] += "-DUSROUTPUT "
 
@@ -430,6 +436,7 @@ print(
     + ("/GCA ({} iterations)".format(args["gca"]) if args["gca"] != "OFF" else "")
 )
 print("  Particle payloads:       " + ("ON" if args["payload"] else "OFF"))
+print("  Moving window:           " + ("ON" if args["movwin"] else "OFF"))
 
 print("PHYSICS ......................................................................")
 print("  External fields:         " + ("ON" if args["extfields"] else "OFF"))
