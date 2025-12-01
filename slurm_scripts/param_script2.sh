@@ -28,8 +28,8 @@ PYTHON_SCRIPT=/work/10446/anindya_12/ls6/tristan_mp_v2/pyNotebooks/COMP_calc.py 
 
 for psi in "${PSI_VALUES[@]}"; do
   # Compute cos(psi) in radians for movwingam
-  MOVWINGAM_TRUE=$(echo "scale=8; c($psi)" | bc -l)
-
+  MOVWINGAM_TRUE=$(python3 -c "import math; print(math.cos($psi))")
+  
   for mul1 in "${MULT1_VALUES[@]}"; do
     for mul2 in "${MULT2_VALUES[@]}"; do
       for TT in "${TT_VALUES[@]}"; do
