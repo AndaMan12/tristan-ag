@@ -22,7 +22,9 @@ module m_mainloop
 #ifdef USROUTPUT
   use m_userfile, only: userOutput
 #endif
+#ifdef MOVING_WINDOW
   use m_moving_window, only: moving_window_step
+#endif
   use m_errors
 
   ! extra physics
@@ -276,7 +278,9 @@ contains
       !-------------------------------------------------
       ! Moving window shift
       call startTimer(9)
+#ifdef MOVING_WINDOW
       call moving_window_step(timestep)
+#endif
       call clearGhostParticles()
       call flushTimer(9)
       !.................................................

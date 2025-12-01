@@ -1,3 +1,4 @@
+#ifdef MOVING_WINDOW
 module m_moving_window
   use m_globalnamespace
   use m_errors
@@ -412,3 +413,13 @@ contains
 #endif
   end subroutine clear_tile
 end module m_moving_window
+#else
+module m_moving_window
+  implicit none
+contains
+  subroutine moving_window_step(it)
+    implicit none
+    integer, intent(in) :: it
+  end subroutine moving_window_step
+end module m_moving_window
+#endif
