@@ -30,9 +30,11 @@ module m_userfile
   !...............................................................!
 contains
   !--- initialization -----------------------------------------!
-  subroutine userReadInput()
-    implicit none
-    call getInput('problem', 'B_0', B_0)
+    subroutine userReadInput()
+      implicit none
+      integer :: movwin_flag
+
+      call getInput('problem', 'B_0', B_0)
     call getInput('problem', 'psi', psi)
     call getInput('problem', 'B_amplitude', B_amp)
     call getInput('problem', 'spread', spread)
@@ -40,9 +42,8 @@ contains
     call getInput('problem', 'shift_gamma', shift_gamma)
     call getInput('problem', 'temperature', TT)
     call getInput('problem', 'multiplicity_1', mult1)
-    call getInput('problem', 'multiplicity_2', mult2)
-    call getInput('problem', 'ramp_width', ramp_width)
-    integer :: movwin_flag
+      call getInput('problem', 'multiplicity_2', mult2)
+      call getInput('problem', 'ramp_width', ramp_width)
 
     call getInput('moving_window', 'movwin', movwin_flag, 0)
     call getInput('moving_window', 'shiftstart', mw_shift_start, 0)
