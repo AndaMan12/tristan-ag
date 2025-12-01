@@ -18,7 +18,7 @@ module m_userfile
   logical, private :: use_moving_window = .false.
   integer :: movwin_flag
   integer, private :: mw_shift_start = 0, mw_shift_interval = 0
-  real(kind=dprec), private :: mw_speed = 0.0, mw_gamma_param = 0.0
+  real, private :: mw_speed = 0.0, mw_gamma_param = 0.0
   real, private :: cached_weight_factor = 1.0, cached_max_density = 0.0
   real, private :: cached_pos_tot_dens = 0.0, cached_ele_tot_dens = 0.0
   real, private :: cached_jA_ec_max = 0.0
@@ -58,10 +58,10 @@ contains
     fin_x_boundary = init_x_boundary + int(ramp_width * 2 * M_PI / mode)
   end subroutine userReadInput
 
-  real(kind=dprec) function compute_window_speed(gamma_like)
+  real function compute_window_speed(gamma_like)
     implicit none
-    real(kind=dprec), intent(in) :: gamma_like
-    real(kind=dprec) :: gamma_val
+    real, intent(in) :: gamma_like
+    real :: gamma_val
 
     if (.not. use_moving_window) then
       compute_window_speed = 0.0
