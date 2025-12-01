@@ -16,6 +16,7 @@ module m_userfile
   !--- PRIVATE variables -----------------------------------------!
   real, private :: B_0, B_amp, mode, spread, shift_gamma, TT, psi, mult1, mult2
   logical, private :: use_moving_window = .false.
+  integer :: movwin_flag
   integer, private :: mw_shift_start = 0, mw_shift_interval = 0
   real(kind=dprec), private :: mw_speed = 0.0, mw_gamma_param = 0.0
   real, private :: cached_weight_factor = 1.0, cached_max_density = 0.0
@@ -31,10 +32,9 @@ module m_userfile
 contains
   !--- initialization -----------------------------------------!
     subroutine userReadInput()
-      implicit none
-      integer :: movwin_flag
+      implicit none      
 
-      call getInput('problem', 'B_0', B_0)
+    call getInput('problem', 'B_0', B_0)
     call getInput('problem', 'psi', psi)
     call getInput('problem', 'B_amplitude', B_amp)
     call getInput('problem', 'spread', spread)
@@ -42,8 +42,8 @@ contains
     call getInput('problem', 'shift_gamma', shift_gamma)
     call getInput('problem', 'temperature', TT)
     call getInput('problem', 'multiplicity_1', mult1)
-      call getInput('problem', 'multiplicity_2', mult2)
-      call getInput('problem', 'ramp_width', ramp_width)
+    call getInput('problem', 'multiplicity_2', mult2)
+    call getInput('problem', 'ramp_width', ramp_width)
 
     call getInput('moving_window', 'movwin', movwin_flag, 0)
     call getInput('moving_window', 'shiftstart', mw_shift_start, 0)
@@ -534,9 +534,9 @@ contains
     integer, optional, intent(in) :: step
     ! called after particles move and deposit ...
     ! ... and before the currents are added to the electric field
-    integer :: s, ti, tj, tk, p
-    real :: u_, v_, w_, x_l, y_l, z_l, x_g, inv_gamma, gamma
-    real :: tfrac, xcolis, xnew, x0
+    ! integer :: s, ti, tj, tk, p
+    ! real :: u_, v_, w_, x_l, y_l, z_l, x_g, inv_gamma, gamma
+    ! real :: tfrac, xcolis, xnew, x0
     
     ! type(maxwellian) :: mwl
     ! mwl % dimension = 2
@@ -546,77 +546,77 @@ contains
     ! mwl % shift_flag = .true.
     ! mwl % shift_dir = -1
 
-    do s = 1, nspec
-     do ti = 1, species(s) % tile_nx
-       do tj = 1, species(s) % tile_ny
-         do tk = 1, species(s) % tile_nz
-           do p = 1, species(s) % prtl_tile(ti, tj, tk) % npart_sp
-             x_l = REAL(species(s) % prtl_tile(ti, tj, tk) % xi(p)) + species(s) % prtl_tile(ti, tj, tk) % dx(p)
-             x_g = x_l + REAL(this_meshblock % ptr % x0)
-             if (x_g .lt. 0) then
-               u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
-               v_ = species(s) % prtl_tile(ti, tj, tk) % v(p)
-               w_ = species(s) % prtl_tile(ti, tj, tk) % w(p)
-               gamma = sqrt(1.0 + u_**2 + v_**2 + w_**2)
-               inv_gamma = 1.0 / gamma
-               x0 = x_l - u_ * inv_gamma * CC
-               tfrac = abs((x0 - 0) / (u_ * inv_gamma * CC))
-               if (tfrac .lt. 1) then
-                 xcolis = x0 + u_ * inv_gamma * CC * tfrac
-               end if
-               y_l = REAL(species(s) % prtl_tile(ti, tj, tk) % yi(p)) + species(s) % prtl_tile(ti, tj, tk) % dy(p)
-               z_l = REAL(species(s) % prtl_tile(ti, tj, tk) % zi(p)) + species(s) % prtl_tile(ti, tj, tk) % dz(p)
-               call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
-                                                      xcolis, y_l, z_l, x_l, y_l, z_l, -1.0)
-               ! spawning new particle from same thermal dist.
-              !  call generateFromMaxwellian(mwl, u_, v_, w_)
-               !u_ = 0; v_ = 0; w_ = 0
-               species(s) % prtl_tile(ti, tj, tk) % u(p) = -u_
-               species(s) % prtl_tile(ti, tj, tk) % v(p) = v_
-               species(s) % prtl_tile(ti, tj, tk) % w(p) = w_
-              !  u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
-               tfrac = min(abs((x_l - xcolis) / max(abs(x_l - x0), 1e-9)), 1.0)
-               xnew = xcolis + (- u_) * inv_gamma * CC * tfrac
-               species(s) % prtl_tile(ti, tj, tk) % xi(p) = INT(FLOOR(xnew), 2)
-               species(s) % prtl_tile(ti, tj, tk) % dx(p) = xnew - REAL(species(s) % prtl_tile(ti, tj, tk) % xi(p))
-               call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
-                                                      xcolis, y_l, z_l, xnew, y_l, z_l, 1.0)
-             end if
+    ! do s = 1, nspec
+    !  do ti = 1, species(s) % tile_nx
+    !    do tj = 1, species(s) % tile_ny
+    !      do tk = 1, species(s) % tile_nz
+    !        do p = 1, species(s) % prtl_tile(ti, tj, tk) % npart_sp
+    !          x_l = REAL(species(s) % prtl_tile(ti, tj, tk) % xi(p)) + species(s) % prtl_tile(ti, tj, tk) % dx(p)
+    !          x_g = x_l + REAL(this_meshblock % ptr % x0)
+    !          if (x_g .lt. 0) then
+    !            u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
+    !            v_ = species(s) % prtl_tile(ti, tj, tk) % v(p)
+    !            w_ = species(s) % prtl_tile(ti, tj, tk) % w(p)
+    !            gamma = sqrt(1.0 + u_**2 + v_**2 + w_**2)
+    !            inv_gamma = 1.0 / gamma
+    !            x0 = x_l - u_ * inv_gamma * CC
+    !            tfrac = abs((x0 - 0) / (u_ * inv_gamma * CC))
+    !            if (tfrac .lt. 1) then
+    !              xcolis = x0 + u_ * inv_gamma * CC * tfrac
+    !            end if
+    !            y_l = REAL(species(s) % prtl_tile(ti, tj, tk) % yi(p)) + species(s) % prtl_tile(ti, tj, tk) % dy(p)
+    !            z_l = REAL(species(s) % prtl_tile(ti, tj, tk) % zi(p)) + species(s) % prtl_tile(ti, tj, tk) % dz(p)
+    !            call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
+    !                                                   xcolis, y_l, z_l, x_l, y_l, z_l, -1.0)
+    !            ! spawning new particle from same thermal dist.
+    !           !  call generateFromMaxwellian(mwl, u_, v_, w_)
+    !            !u_ = 0; v_ = 0; w_ = 0
+    !            species(s) % prtl_tile(ti, tj, tk) % u(p) = -u_
+    !            species(s) % prtl_tile(ti, tj, tk) % v(p) = v_
+    !            species(s) % prtl_tile(ti, tj, tk) % w(p) = w_
+    !           !  u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
+    !            tfrac = min(abs((x_l - xcolis) / max(abs(x_l - x0), 1e-9)), 1.0)
+    !            xnew = xcolis + (- u_) * inv_gamma * CC * tfrac
+    !            species(s) % prtl_tile(ti, tj, tk) % xi(p) = INT(FLOOR(xnew), 2)
+    !            species(s) % prtl_tile(ti, tj, tk) % dx(p) = xnew - REAL(species(s) % prtl_tile(ti, tj, tk) % xi(p))
+    !            call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
+    !                                                   xcolis, y_l, z_l, xnew, y_l, z_l, 1.0)
+    !          end if
 
-             if (x_g .gt. global_mesh%sx) then
-              u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
-              v_ = species(s) % prtl_tile(ti, tj, tk) % v(p)
-              w_ = species(s) % prtl_tile(ti, tj, tk) % w(p)
-              gamma = sqrt(1.0 + u_**2 + v_**2 + w_**2)
-              inv_gamma = 1.0 / gamma
-              x0 = x_l - u_ * inv_gamma * CC
-              tfrac = abs((x0 - global_mesh%sx) / (u_ * inv_gamma * CC))
-              if (tfrac .lt. 1) then
-                xcolis = x0 + u_ * inv_gamma * CC * tfrac
-              end if
-              y_l = REAL(species(s) % prtl_tile(ti, tj, tk) % yi(p)) + species(s) % prtl_tile(ti, tj, tk) % dy(p)
-              z_l = REAL(species(s) % prtl_tile(ti, tj, tk) % zi(p)) + species(s) % prtl_tile(ti, tj, tk) % dz(p)
-              call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
-                                                     xcolis, y_l, z_l, x_l, y_l, z_l, -1.0)
-              ! spawning new particle from same thermal dist.
-              ! call generateFromMaxwellian(mwl, u_, v_, w_)
-              !u_ = 0; v_ = 0; w_ = 0
-              species(s) % prtl_tile(ti, tj, tk) % u(p) = -u_
-              species(s) % prtl_tile(ti, tj, tk) % v(p) = v_
-              species(s) % prtl_tile(ti, tj, tk) % w(p) = w_
-             !  u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
-              tfrac = min(abs((x_l - xcolis) / max(abs(x_l - x0), 1e-9)), 1.0)
-              xnew = xcolis + (- u_) * inv_gamma * CC * tfrac
-              species(s) % prtl_tile(ti, tj, tk) % xi(p) = INT(FLOOR(xnew), 2)
-              species(s) % prtl_tile(ti, tj, tk) % dx(p) = xnew - REAL(species(s) % prtl_tile(ti, tj, tk) % xi(p))
-              call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
-                                                     xcolis, y_l, z_l, xnew, y_l, z_l, 1.0)
-            end if
-           end do
-         end do
-       end do
-     end do
-    end do
+    !          if (x_g .gt. global_mesh%sx) then
+    !           u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
+    !           v_ = species(s) % prtl_tile(ti, tj, tk) % v(p)
+    !           w_ = species(s) % prtl_tile(ti, tj, tk) % w(p)
+    !           gamma = sqrt(1.0 + u_**2 + v_**2 + w_**2)
+    !           inv_gamma = 1.0 / gamma
+    !           x0 = x_l - u_ * inv_gamma * CC
+    !           tfrac = abs((x0 - global_mesh%sx) / (u_ * inv_gamma * CC))
+    !           if (tfrac .lt. 1) then
+    !             xcolis = x0 + u_ * inv_gamma * CC * tfrac
+    !           end if
+    !           y_l = REAL(species(s) % prtl_tile(ti, tj, tk) % yi(p)) + species(s) % prtl_tile(ti, tj, tk) % dy(p)
+    !           z_l = REAL(species(s) % prtl_tile(ti, tj, tk) % zi(p)) + species(s) % prtl_tile(ti, tj, tk) % dz(p)
+    !           call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
+    !                                                  xcolis, y_l, z_l, x_l, y_l, z_l, -1.0)
+    !           ! spawning new particle from same thermal dist.
+    !           ! call generateFromMaxwellian(mwl, u_, v_, w_)
+    !           !u_ = 0; v_ = 0; w_ = 0
+    !           species(s) % prtl_tile(ti, tj, tk) % u(p) = -u_
+    !           species(s) % prtl_tile(ti, tj, tk) % v(p) = v_
+    !           species(s) % prtl_tile(ti, tj, tk) % w(p) = w_
+    !          !  u_ = species(s) % prtl_tile(ti, tj, tk) % u(p)
+    !           tfrac = min(abs((x_l - xcolis) / max(abs(x_l - x0), 1e-9)), 1.0)
+    !           xnew = xcolis + (- u_) * inv_gamma * CC * tfrac
+    !           species(s) % prtl_tile(ti, tj, tk) % xi(p) = INT(FLOOR(xnew), 2)
+    !           species(s) % prtl_tile(ti, tj, tk) % dx(p) = xnew - REAL(species(s) % prtl_tile(ti, tj, tk) % xi(p))
+    !           call depositCurrentsFromSingleParticle(s, species(s) % prtl_tile(ti, tj, tk), p, &
+    !                                                  xcolis, y_l, z_l, xnew, y_l, z_l, 1.0)
+    !         end if
+    !        end do
+    !      end do
+    !    end do
+    !  end do
+    ! end do
   end subroutine userCurrentDeposit
 
   subroutine userDriveParticles(step)
@@ -803,9 +803,7 @@ contains
   end subroutine userFillNewRegion
 
 #include "optional.F"
-
-
-
-
+  !............................................................!
+end module m_userfile
 
 
