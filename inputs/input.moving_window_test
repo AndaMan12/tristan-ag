@@ -58,7 +58,7 @@
 
 <plasma>
 
-  ppc0          = 8
+  ppc0          = 0
   sigma         = 1
   c_omp         = 10
 
@@ -79,7 +79,7 @@
 <problem>
 
   background_n     = 8.0
-  background_T     = 1.0e-4
+  background_T     = 1.0e-2
   drift_gamma      = 1.0
   field_amplitude  = 1.0e-3
   field_wavelength = 32.0
