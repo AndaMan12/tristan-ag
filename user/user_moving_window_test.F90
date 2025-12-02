@@ -12,11 +12,11 @@ module m_userfile
 #endif
   implicit none
 
-  real :: background_T = 1.0d-4
-  real :: background_n = 1.0d0
-  real :: drift_gamma = 1.0d0
-  real :: field_amplitude = 0.0d0
-  real :: field_wavelength = 64.0d0
+  real :: background_T = 1e-4
+  real :: background_n = 1.00
+  real :: drift_gamma = 1.00
+  real :: field_amplitude = 0.00
+  real :: field_wavelength = 64.00
   logical :: zero_current_load = .true.
 
   private :: userSpatialDistribution, apply_field_profile
