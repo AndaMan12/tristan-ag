@@ -85,7 +85,7 @@ ANIMATION: Make sure to "fetch" the appropriate data first.
 
 This code here is for animating the phase space and show the "eye"-formation.
 """
-from matplotlib.animation import FuncAnimation, FFMpegWriter
+from matplotlib.animation import FuncAnimation, PillowWriter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.ticker as ticker
 
@@ -185,7 +185,7 @@ def animate_phase(frame):
 ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(300)), blit=False)
 
 # Save the animation
-writer = FFMpegWriter(fps=1, bitrate=1800)
+writer = PillowWriter(fps=1, bitrate=2400)  # You can increase FPS if needed
 ani.save("moving_window_test.mp4", writer=writer, dpi=300)
 # animate_phase(490)
 # User-defined coordinates for the arrows
