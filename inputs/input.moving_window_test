@@ -59,7 +59,7 @@
 <plasma>
 
   ppc0          = 8
-  sigma         = 0
+  sigma         = 1
   c_omp         = 10
 
 <particles>

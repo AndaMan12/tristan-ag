@@ -4,9 +4,9 @@
 #SBATCH --mail-type=all
 #SBATCH --mail-user=anindyaguria@iisc.ac.in
 #SBATCH -p normal
-#SBATCH -t 48:00:00  # dd-hh:mm:ss
-#SBATCH -N 4
-#SBATCH -n 80
+#SBATCH -t 01:00:00  # dd-hh:mm:ss
+#SBATCH -N 1
+#SBATCH -n 10
 #SBATCH --output=%x-%j.log
 
 # Load necessary modules
@@ -56,13 +56,13 @@ for psi in "${PSI_VALUES[@]}"; do
         RUN_TS=$(date +%Y%m%d_%H%M%S)
         LOGFILE="out_TSI_EM_psi${psi}_mul1${mul1}_mul2${mul2}_TT${TT}_${RUN_TS}.log"
 
-        # srun /work/10446/anindya_12/ls6/tristan_mp_v2/bin/tristan-mp2d -i "$NEW_INPUT" > "$LOGFILE"
+        ibrun /work/10446/anindya_12/ls6/tristan_mp_v2/bin/tristan-mp2d -i "$NEW_INPUT" > "$LOGFILE"
 
         # Move the results to the vault
-        # OUTPUT_TAG="/scratch/10446/anindya_12/ls6/tristan_mp_v2/vault/output_psi${psi}_mul1_${mul1}_mul2_${mul2}_TT_${TT}_mov_win"
-        # mv "$NEW_INPUT" output
-        # mv "$LOGFILE" output
-        # mv output "$OUTPUT_TAG"
+         OUTPUT_TAG="/scratch/10446/anindya_12/ls6/tristan_mp_v2/vault/output_psi${psi}_mul1_${mul1}_mul2_${mul2}_TT_${TT}_mov_win"
+         mv "$NEW_INPUT" output
+         mv "$LOGFILE" output
+         mv output "$OUTPUT_TAG"
 
       done
     done

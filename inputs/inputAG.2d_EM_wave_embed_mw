@@ -22,7 +22,7 @@
 <moving_window>
 
   movwin       = 1
-  shiftstart   = 100
+  shiftstart   = 10
   shiftinterval = 20
   movwingam    = 0.5403023   # gamma of the window (beta~0.98); set <1 to supply beta directly
 
@@ -40,7 +40,7 @@
   prtl_enable   = 1              # prtl output [1]
   hst_enable  =  0
   hst_interval  =  200
-  interval = 20
+  interval = 100
   stride = 100
 
   usr_enable = 0
