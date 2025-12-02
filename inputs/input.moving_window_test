@@ -28,8 +28,8 @@
 <moving_window>
 
   movwin        = 1
-  shiftinterval = 10
-  shiftstart    = 50
+  shiftinterval = 1
+  shiftstart    = 0
   movwingam     = 2000
 
 <algorithm>
