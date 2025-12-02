@@ -189,7 +189,7 @@ ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(Nsteps)), blit=False)
 
 # Save the animation
 writer = PillowWriter(fps=1, bitrate=2400)  # You can increase FPS if needed
-ani.save("moving_window_test.gif", writer=writer, dpi=300)
+ani.save("moving_window_test_no.gif", writer=writer, dpi=300)
 # animate_phase(490)
 # User-defined coordinates for the arrows
 # Here's a sample code where you can adjust the coordinates.
