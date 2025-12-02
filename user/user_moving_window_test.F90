@@ -25,11 +25,11 @@ contains
     implicit none
     integer :: zero_curr_flag
 
-    call getInput('problem', 'background_n', background_n, 1.0d0)
-    call getInput('problem', 'background_T', background_T, 1.0d-4)
-    call getInput('problem', 'drift_gamma', drift_gamma, 1.0d0)
-    call getInput('problem', 'field_amplitude', field_amplitude, 0.0d0)
-    call getInput('problem', 'field_wavelength', field_wavelength, 64.0d0)
+    call getInput('problem', 'background_n', background_n, 1.00)
+    call getInput('problem', 'background_T', background_T, 1e-4)
+    call getInput('problem', 'drift_gamma', drift_gamma, 1.00)
+    call getInput('problem', 'field_amplitude', field_amplitude, 0.00)
+    call getInput('problem', 'field_wavelength', field_wavelength, 64.00)
     call getInput('problem', 'zero_current', zero_curr_flag, 1)
 
     zero_current_load = (zero_curr_flag == 1)
@@ -79,9 +79,9 @@ contains
 
   subroutine userInitFields()
     implicit none
-    ex(:, :, :) = 0.0d0; ey(:, :, :) = 0.0d0; ez(:, :, :) = 0.0d0
-    bx(:, :, :) = 0.0d0; by(:, :, :) = 0.0d0; bz(:, :, :) = 0.0d0
-    jx(:, :, :) = 0.0d0; jy(:, :, :) = 0.0d0; jz(:, :, :) = 0.0d0
+    ex(:, :, :) = 0.00; ey(:, :, :) = 0.00; ez(:, :, :) = 0.00
+    bx(:, :, :) = 0.00; by(:, :, :) = 0.00; bz(:, :, :) = 0.00
+    jx(:, :, :) = 0.00; jy(:, :, :) = 0.00; jz(:, :, :) = 0.00
 
     call apply_field_profile(this_meshblock%ptr%x0, this_meshblock%ptr%x0 + this_meshblock%ptr%sx - 1)
   end subroutine userInitFields
@@ -174,10 +174,10 @@ contains
     integer :: i_start, i_end
     real :: phase, wavelength_inv
 
-    if (field_amplitude == 0.0d0) return
+    if (field_amplitude == 0.00) return
 
-    wavelength_inv = 0.0d0
-    if (field_wavelength .ne. 0.0d0) wavelength_inv = 1.0d0 / field_wavelength
+    wavelength_inv = 0.00
+    if (field_wavelength .ne. 0.00) wavelength_inv = 1.0 / field_wavelength
 
     i_start = max(int(ceiling(xmin_glob)), this_meshblock%ptr%x0)
     i_end = min(int(floor(xmax_glob)), this_meshblock%ptr%x0 + this_meshblock%ptr%sx - 1)
@@ -189,45 +189,45 @@ contains
 #ifdef twoD
       do j_glob = 0, this_meshblock%ptr%sy - 1
         j_local = this_meshblock%ptr%j1 + j_glob
-        phase = 2.0d0 * M_PI * (real(i_glob, kind=dprec) + 0.5d0) * wavelength_inv
+        phase = 2.00 * M_PI * (real(i_glob, kind=dprec) + 0.50) * wavelength_inv
         ex(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
-        ey(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        ez(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        bx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        by(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        bz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        jx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        jy(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-        jz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
+        ey(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        ez(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        bx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        by(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        bz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        jx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        jy(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        jz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       end do
 #elif defined(threeD)
       do j_glob = 0, this_meshblock%ptr%sy - 1
         j_local = this_meshblock%ptr%j1 + j_glob
         do k_glob = 0, this_meshblock%ptr%sz - 1
           k_local = this_meshblock%ptr%k1 + k_glob
-          phase = 2.0d0 * M_PI * (real(i_glob, kind=dprec) + 0.5d0) * wavelength_inv
+          phase = 2.00 * M_PI * (real(i_glob, kind=dprec) + 0.50) * wavelength_inv
           ex(i_local, j_local, k_local) = field_amplitude * sin(phase)
-          ey(i_local, j_local, k_local) = 0.0d0
-          ez(i_local, j_local, k_local) = 0.0d0
-          bx(i_local, j_local, k_local) = 0.0d0
-          by(i_local, j_local, k_local) = 0.0d0
-          bz(i_local, j_local, k_local) = 0.0d0
-          jx(i_local, j_local, k_local) = 0.0d0
-          jy(i_local, j_local, k_local) = 0.0d0
-          jz(i_local, j_local, k_local) = 0.0d0
+          ey(i_local, j_local, k_local) = 0.00
+          ez(i_local, j_local, k_local) = 0.00
+          bx(i_local, j_local, k_local) = 0.00
+          by(i_local, j_local, k_local) = 0.00
+          bz(i_local, j_local, k_local) = 0.00
+          jx(i_local, j_local, k_local) = 0.00
+          jy(i_local, j_local, k_local) = 0.00
+          jz(i_local, j_local, k_local) = 0.00
         end do
       end do
 #else
-      phase = 2.0d0 * M_PI * (real(i_glob, kind=dprec) + 0.5d0) * wavelength_inv
+      phase = 2.00 * M_PI * (real(i_glob, kind=dprec) + 0.50) * wavelength_inv
       ex(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
-      ey(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      ez(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      bx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      by(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      bz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      jx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      jy(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
-      jz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.0d0
+      ey(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      ez(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      bx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      by(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      bz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      jx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      jy(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      jz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
 #endif
     end do
   end subroutine apply_field_profile
