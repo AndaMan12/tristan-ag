@@ -76,6 +76,7 @@ X2   = np.array(X2)
 ux_2 = np.array(ux_2)
 """
 
+print(X1)
 
 
 
@@ -182,11 +183,11 @@ def animate_phase(frame):
     return ax3.lines + [ax3.texts[-1]] + ax2.lines + [ax2.texts[-1]]  # Return a list of Artists
 
 # Create the animation
-ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(300)), blit=False)
+ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(20)), blit=False)
 
 # Save the animation
 writer = PillowWriter(fps=1, bitrate=2400)  # You can increase FPS if needed
-ani.save("moving_window_test.mp4", writer=writer, dpi=300)
+ani.save("moving_window_test.gif", writer=writer, dpi=300)
 # animate_phase(490)
 # User-defined coordinates for the arrows
 # Here's a sample code where you can adjust the coordinates.
