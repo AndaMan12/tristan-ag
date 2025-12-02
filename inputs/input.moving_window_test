@@ -30,7 +30,7 @@
   movwin        = 1
   shiftinterval = 10
   shiftstart    = 50
-  movwingam     = 0.2
+  movwingam     = 2000
 
 <algorithm>
 
@@ -78,8 +78,8 @@
 
 <problem>
 
-  background_n     = 8.0
-  background_T     = 1.0e-2
+  background_n     = 0.001
+  background_T     = 1.0e-4
   drift_gamma      = 1.0
   field_amplitude  = 1.0e-3
   field_wavelength = 32.0
