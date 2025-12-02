@@ -47,8 +47,8 @@ ux_2 = []
 # X4   = []
 # ux_4 = []
 
-# Ex       = np.zeros(shape = (Nsteps, grid_x))
-# Jx       = np.zeros(shape = (Nsteps, grid_x))
+Ex       = np.zeros(shape = (Nsteps, grid_x))
+Jx       = np.zeros(shape = (Nsteps, grid_x))
 density1 = np.zeros(shape = (Nsteps, grid_x))
 density2 = np.zeros(shape = (Nsteps, grid_x))
 
@@ -64,8 +64,8 @@ for step in tqdm(range(Nsteps)):
     # ux_4.append(fetch_var_at_step(out_dir, "prtl", step)["4"]['u'])
     density1[step,:] = fetch_var_at_step(out_dir, "flds", step)["dens1"][0,0,:]
     density2[step,:] = fetch_var_at_step(out_dir, "flds", step)["dens2"][0,0,:]
-    # Ex[step,:] = fetch_var_at_step(out_dir, "flds", step)["ex"][0,0,:]
-    # Jx[step,:] = fetch_var_at_step(out_dir, "flds", step)["jx"][0,0,:]
+    Ex[step,:] = fetch_var_at_step(out_dir, "flds", step)["ex"][0,0,:]
+    Jx[step,:] = fetch_var_at_step(out_dir, "flds", step)["jx"][0,0,:]
 
 
 """
@@ -144,9 +144,10 @@ def animate_phase(frame):
     ax3.clear()
     # ax.scatter(0, -0.2)
     # ax.scatter(0, 0.2)
-    d_fluc = ((density1[frame] + density2[frame]) - (density1[0] + density2[0]))/(density1[0] + density2[0])
+    # d_fluc = ((density1[frame] + density2[frame]) - (density1[0] + density2[0]))/(density1[0] + density2[0])
     
-    ax3.plot(xx, d_fluc, color = "black")
+    # ax3.plot(xx, d_fluc, color = "black")
+    ax3.plot(xx, Ex[frame,:]/B_norm, color = "black")
     # ax3.scatter(X2[frame, :], ux_2[frame, :], s = 0.5, color = "blue", label="electrons (-x)") 
     # ax.scatter(X3[frame, :], ux_3[frame, :], s = 0.05, color = "blue", label="antiprotons (+x)")
     # ax.scatter(X4[frame, :], ux_4[frame, :], s = 0.05, color = "green", label="protons (-x)") 
@@ -154,7 +155,8 @@ def animate_phase(frame):
     # ax3.legend(loc="upper left")
     ax3.set_xlabel(r"$x \omega_{p}/ c$",fontsize=14)
     ax3.xaxis.set_major_formatter(ticks_x)
-    ax3.set_ylabel(r"$\delta n_e/ n_{e,0}$",fontsize=14)
+    # ax3.set_ylabel(r"$\delta n_e/ n_{e,0}$",fontsize=14)
+    ax3.set_ylabel(r"$E_x/ B_0$",fontsize=14)
     ax3.tick_params(axis='both', which='major', labelsize=12)
     # ax3.set_ylim(-2, 2)
     # ax3.set_title(r"Density fluctuations at $\omega_{\rm p0}t = $" + "{:.2f}".format(frame * interval * omegap0),fontsize=15)
@@ -183,7 +185,7 @@ def animate_phase(frame):
     return ax3.lines + [ax3.texts[-1]] + ax2.lines + [ax2.texts[-1]]  # Return a list of Artists
 
 # Create the animation
-ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(20)), blit=False)
+ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(Nsteps)), blit=False)
 
 # Save the animation
 writer = PillowWriter(fps=1, bitrate=2400)  # You can increase FPS if needed
