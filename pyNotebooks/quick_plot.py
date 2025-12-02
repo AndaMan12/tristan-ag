@@ -67,11 +67,14 @@ for step in tqdm(range(Nsteps)):
     # Ex[step,:] = fetch_var_at_step(out_dir, "flds", step)["ex"][0,0,:]
     # Jx[step,:] = fetch_var_at_step(out_dir, "flds", step)["jx"][0,0,:]
 
+
+"""
+
 X1   = np.array(X1)
 ux_1 = np.array(ux_1)
 X2   = np.array(X2)
 ux_2 = np.array(ux_2)
-
+"""
 
 
 
@@ -124,8 +127,8 @@ def animate_phase(frame):
     ax2.clear()
     # ax.scatter(0, -0.2)
     # ax.scatter(0, 0.2)
-    ax2.scatter(X1[frame, :], ux_1[frame, :], s = 0.8, color = "red", label="electrons (+x)")
-    ax2.scatter(X2[frame, :], ux_2[frame, :], s = 0.8, color = "blue", label="electrons (-x)") 
+    ax2.scatter(X1[frame][:], ux_1[frame][:], s = 0.8, color = "red", label="electrons (+x)")
+    ax2.scatter(X2[frame][:], ux_2[frame][:], s = 0.8, color = "blue", label="electrons (-x)") 
     # ax.scatter(X3[frame, :], ux_3[frame, :], s = 0.05, color = "blue", label="antiprotons (+x)")
     # ax.scatter(X4[frame, :], ux_4[frame, :], s = 0.05, color = "green", label="protons (-x)") 
     ax2.text(0.01, 0.87, r"$\omega_{p}t = $" + "{:.2f}".format(frame * interval * omegap0), fontsize=12, transform=ax2.transAxes)
