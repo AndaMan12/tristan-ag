@@ -83,7 +83,7 @@ contains
     bx(:, :, :) = 0.00; by(:, :, :) = 0.00; bz(:, :, :) = 0.00
     jx(:, :, :) = 0.00; jy(:, :, :) = 0.00; jz(:, :, :) = 0.00
 
-    call apply_field_profile(this_meshblock%ptr%x0, this_meshblock%ptr%x0 + this_meshblock%ptr%sx - 1)
+    call apply_field_profile(real(this_meshblock%ptr%x0), real(this_meshblock%ptr%x0 + this_meshblock%ptr%sx - 1))
   end subroutine userInitFields
 
   subroutine userCurrentDeposit(step)
