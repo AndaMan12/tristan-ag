@@ -2,6 +2,7 @@ module m_userfile
   use m_globalnamespace
   use m_aux
   use m_readinput
+  use m_helpers
   use m_domain
   use m_particles
   use m_fields
@@ -231,4 +232,7 @@ contains
 #endif
     end do
   end subroutine apply_field_profile
+    subroutine userDeallocate()
+    implicit none
+  end subroutine userDeallocate
 end module m_userfile
