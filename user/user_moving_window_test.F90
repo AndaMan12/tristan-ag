@@ -12,11 +12,11 @@ module m_userfile
 #endif
   implicit none
 
-  real(kind=dprec) :: background_n = 1.0d0
-  real(kind=dprec) :: background_T = 1.0d-4
-  real(kind=dprec) :: drift_gamma = 1.0d0
-  real(kind=dprec) :: field_amplitude = 0.0d0
-  real(kind=dprec) :: field_wavelength = 64.0d0
+  real :: background_T = 1.0d-4
+  real :: background_n = 1.0d0
+  real :: drift_gamma = 1.0d0
+  real :: field_amplitude = 0.0d0
+  real :: field_wavelength = 64.0d0
   logical :: zero_current_load = .true.
 
   private :: userSpatialDistribution, apply_field_profile
@@ -168,11 +168,11 @@ contains
 
   subroutine apply_field_profile(xmin_glob, xmax_glob)
     implicit none
-    real(kind=dprec), intent(in) :: xmin_glob, xmax_glob
+    real, intent(in) :: xmin_glob, xmax_glob
     integer :: i_glob, j_glob, k_glob
     integer :: i_local, j_local, k_local
     integer :: i_start, i_end
-    real(kind=dprec) :: phase, wavelength_inv
+    real :: phase, wavelength_inv
 
     if (field_amplitude == 0.0d0) return
 
