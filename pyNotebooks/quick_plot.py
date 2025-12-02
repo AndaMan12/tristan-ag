@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import tristanVis.isolde as isolde
 from tqdm import tqdm
 
-out_dir = "../slurm_scripts/output/"
-input_file_name = "../inputs/inputAG.1dtwostream_thermal"
+out_dir = "../output/"
+input_file_name = "../inputs/input.moving_window_test"
 # hist            = isolde.parseHistory(out_dir + "history")
 input_params    = isolde.parseInput(input_file_name)
 interval        = input_params["output"]["interval"]
