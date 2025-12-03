@@ -76,7 +76,7 @@ X2   = np.array(X2)
 ux_2 = np.array(ux_2)
 """
 
-print(X1)
+# print(X1)
 
 
 

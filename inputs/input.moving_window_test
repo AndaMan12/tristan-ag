@@ -58,7 +58,7 @@
 
 <plasma>
 
-  ppc0          = 1
+  ppc0          = 20
   sigma         = 1
   c_omp         = 10
 
