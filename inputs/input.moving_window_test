@@ -27,7 +27,7 @@
 
 <moving_window>
 
-  movwin        = 0
+  movwin        = 1
   shiftinterval = 1
   shiftstart    = 0
   movwingam     = 2000
