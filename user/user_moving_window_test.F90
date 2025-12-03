@@ -190,13 +190,13 @@ contains
 #ifdef twoD
       do j_glob = 0, this_meshblock%ptr%sy - 1
         j_local = this_meshblock%ptr%j1 + j_glob
-        phase = 2.00 * M_PI * (real(i_glob, kind=dprec) + 0.50) * wavelength_inv
-        ex(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
-        ey(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        phase = 2.00 * M_PI * (real(i_glob) + 0.50) * wavelength_inv
+        ex(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        ey(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
         ez(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
         bx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
         by(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
-        bz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        bz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
         jx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
         jy(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
         jz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
@@ -206,26 +206,26 @@ contains
         j_local = this_meshblock%ptr%j1 + j_glob
         do k_glob = 0, this_meshblock%ptr%sz - 1
           k_local = this_meshblock%ptr%k1 + k_glob
-          phase = 2.00 * M_PI * (real(i_glob, kind=dprec) + 0.50) * wavelength_inv
-          ex(i_local, j_local, k_local) = field_amplitude * sin(phase)
-          ey(i_local, j_local, k_local) = 0.00
+          phase = 2.00 * M_PI * (real(i_glob) + 0.50) * wavelength_inv
+          ex(i_local, j_local, k_local) = 0.00
+          ey(i_local, j_local, k_local) = field_amplitude * sin(phase)
           ez(i_local, j_local, k_local) = 0.00
           bx(i_local, j_local, k_local) = 0.00
           by(i_local, j_local, k_local) = 0.00
-          bz(i_local, j_local, k_local) = 0.00
+          bz(i_local, j_local, k_local) = field_amplitude * sin(phase)
           jx(i_local, j_local, k_local) = 0.00
           jy(i_local, j_local, k_local) = 0.00
           jz(i_local, j_local, k_local) = 0.00
         end do
       end do
 #else
-      phase = 2.00 * M_PI * (real(i_glob, kind=dprec) + 0.50) * wavelength_inv
-      ex(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
-      ey(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      phase = 2.00 * M_PI * (real(i_glob) + 0.50) * wavelength_inv
+      ex(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      ey(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
       ez(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       bx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       by(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
-      bz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      bz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
       jx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       jy(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       jz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
