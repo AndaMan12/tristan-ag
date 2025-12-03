@@ -197,9 +197,9 @@ contains
         bx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
         by(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
         bz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
-        jx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
-        jy(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
-        jz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        ! jx(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        ! jy(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+        ! jz(i_local, j_local, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       end do
 #elif defined(threeD)
       do j_glob = 0, this_meshblock%ptr%sy - 1
@@ -213,9 +213,9 @@ contains
           bx(i_local, j_local, k_local) = 0.00
           by(i_local, j_local, k_local) = 0.00
           bz(i_local, j_local, k_local) = field_amplitude * sin(phase)
-          jx(i_local, j_local, k_local) = 0.00
-          jy(i_local, j_local, k_local) = 0.00
-          jz(i_local, j_local, k_local) = 0.00
+          ! jx(i_local, j_local, k_local) = 0.00
+          ! jy(i_local, j_local, k_local) = 0.00
+          ! jz(i_local, j_local, k_local) = 0.00
         end do
       end do
 #else
@@ -226,9 +226,9 @@ contains
       bx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       by(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
       bz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = field_amplitude * sin(phase)
-      jx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
-      jy(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
-      jz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      ! jx(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      ! jy(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
+      ! jz(i_local, this_meshblock%ptr%j1:this_meshblock%ptr%j2, this_meshblock%ptr%k1:this_meshblock%ptr%k2) = 0.00
 #endif
     end do
   end subroutine apply_field_profile
