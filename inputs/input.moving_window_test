@@ -1,0 +1,88 @@
+# Minimal moving-window smoke test for a uniform plasma with a sinusoidal Ex marker
+
+<node_configuration>
+
+  sizex         = 4
+  sizey         = 1
+  sizez         = 1
+
+<time>
+
+  last          = 400
+
+<grid>
+
+  mx0           = 256
+  my0           = 1
+  mz0           = 1
+
+  boundary_x    = 0
+  boundary_y    = 1
+  boundary_z    = 1
+
+  resize_tiles  = 0
+  min_tile_nprt = 64
+
+  tileX         = 4
+  tileY         = 1
+  tileZ         = 1
+
+<moving_window>
+
+  movwin        = 1
+  shiftinterval = 1
+  shiftstart    = 0
+  movwingam     = 2000
+
+<algorithm>
+
+  c             = 0.45
+  corr          = 1.0
+  nfilter       = 4
+  fieldsolver   = 1
+  currdeposit   = 1
+
+<output>
+
+  start         = 0
+  interval      = 5
+  stride        = 1
+  istep         = 1
+  flds_at_prtl  = 0
+  write_xdmf    = 1
+
+  hst_enable    = 1
+  hst_interval  = 10
+
+  spec_min      = 1e-3
+  spec_max      = 1e1
+  spec_num      = 50
+
+<plasma>
+
+  ppc0          = 100
+  sigma         = 1
+  c_omp         = 10
+
+<particles>
+
+  nspec         = 2
+
+  maxptl1       = 5e6
+  m1            = 1.0
+  ch1           = -1.0
+  dwn1          = 1
+
+  maxptl2       = 5e6
+  m2            = 25.0
+  ch2           = 1.0
+  dwn2          = 1
+
+<problem>
+
+  background_n     = 8
+  background_T     = 1.0e-1
+  drift_gamma      = 1.0
+  field_amplitude  = 1.0e-3
+  field_wavelength = 32.0
+  zero_current     = 1

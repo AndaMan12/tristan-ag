@@ -51,6 +51,13 @@
   tileY         = 5              # tile dimension in y [* if 2d+]
   tileZ         = 1              # tile dimension in z [* if 3d]
 
+<moving_window>
+
+  movwin        = 0              # 1 enables the moving window [0]
+  shiftinterval = 20             # apply shifts every N steps [20]
+  shiftstart    = 1000           # first timestep eligible for shifting [1000]
+  movwingam     = 5.0            # window gamma; >1 treated as gamma, <1 as beta, >1e4 -> c [5.0]
+
 <algorithm>
 
   c             = 0.45           # speed of light [0.45]
