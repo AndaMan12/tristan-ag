@@ -315,20 +315,21 @@ contains
     integer(HSIZE_T), intent(out), dimension(3) :: global_dims, blocks
     integer, intent(out), dimension(3) :: starts
     integer :: this_x0, this_y0, this_z0, this_sx, this_sy, this_sz
+    integer :: rel_x0
     integer :: i_start, i_end, j_start, j_end, k_start, k_end
     integer :: offset_i, offset_j, offset_k
     integer :: n_i, n_j, n_k, glob_n_i, glob_n_j, glob_n_k
 
-    ! assuming `global_mesh%{x0,y0,z0} .eq. 0`
     this_x0 = meshblock % x0
     this_y0 = meshblock % y0
     this_z0 = meshblock % z0
     this_sx = meshblock % sx
     this_sy = meshblock % sy
     this_sz = meshblock % sz
+    rel_x0 = this_x0 - global_mesh % x0
 
     if (output_flds_istep .eq. 1) then
-      offset_i = this_x0; offset_j = this_y0; offset_k = this_z0
+      offset_i = rel_x0; offset_j = this_y0; offset_k = this_z0
       n_i = this_sx - 1; n_j = this_sy - 1; n_k = this_sz - 1
       glob_n_i = global_mesh % sx
       glob_n_j = global_mesh % sy
@@ -348,9 +349,9 @@ contains
       offset_k = 0; n_k = 0
       glob_n_k = 1
 #if defined(oneD) || defined (twoD) || defined (threeD)
-      offset_i = CEILING(REAL(this_x0) / REAL(output_flds_istep))
-      i_start = CEILING(REAL(this_x0) / REAL(output_flds_istep)) * output_flds_istep - this_x0
-      i_end = (CEILING(REAL(this_x0 + this_sx) / REAL(output_flds_istep)) - 1) * output_flds_istep - this_x0
+      offset_i = CEILING(REAL(rel_x0) / REAL(output_flds_istep))
+      i_start = CEILING(REAL(rel_x0) / REAL(output_flds_istep)) * output_flds_istep - rel_x0
+      i_end = (CEILING(REAL(rel_x0 + this_sx) / REAL(output_flds_istep)) - 1) * output_flds_istep - rel_x0
       n_i = (i_end - i_start) / output_flds_istep
       glob_n_i = CEILING(REAL(global_mesh % sx) / REAL(output_flds_istep))
       glob_n_i = MAX(1, glob_n_i)
