@@ -5,7 +5,7 @@ module m_moving_window
   use m_domain
   use m_fields
   use m_particles
-  use m_particlelogistics, only: reallocTileSize, allocateParticlesOnEmptyTile
+  use m_particlelogistics, only: reallocTileSize, allocateParticlesOnEmptyTile, createParticleFromAttributes
   use m_readinput, only: getInput
   use m_userfile, only: userFillNewRegion
   implicit none
@@ -203,7 +203,7 @@ contains
     integer :: s, ti, tj, tk, p
     integer :: ti_new, tj_new, tk_new
     integer(kind=2) :: xi_new, yi_new, zi_new
-    type(particle_tile), pointer :: old_tiles(:, :, :)
+    type(particle_tile), allocatable :: old_tiles(:, :, :)
     type(particle_tile), allocatable :: new_tiles(:, :, :)
     integer :: total_npart
 #ifdef MPI
@@ -221,7 +221,7 @@ contains
     if (shift <= 0) return
 
     do s = 1, nspec
-      old_tiles => species(s) % prtl_tile
+      call move_alloc(species(s) % prtl_tile, old_tiles)
 
       allocate (new_tiles(species(s) % tile_nx, species(s) % tile_ny, species(s) % tile_nz))
       do tk = 1, species(s) % tile_nz
@@ -231,6 +231,8 @@ contains
           end do
         end do
       end do
+
+      call move_alloc(new_tiles, species(s) % prtl_tile)
 
       species(s) % cntr_sp = 0
       total_npart = 0
@@ -328,12 +330,15 @@ contains
               tj_new = FLOOR(REAL(yi_new) / REAL(species(s) % tile_sy)) + 1
               tk_new = FLOOR(REAL(zi_new) / REAL(species(s) % tile_sz)) + 1
 
-              call append_to_tile(new_tiles(ti_new, tj_new, tk_new), xi_new, yi_new, zi_new, &
-                                   old_tiles(ti, tj, tk) % dx(p), old_tiles(ti, tj, tk) % dy(p), &
-                                   old_tiles(ti, tj, tk) % dz(p), &
-                                   old_tiles(ti, tj, tk) % u(p), old_tiles(ti, tj, tk) % v(p), &
-                                   old_tiles(ti, tj, tk) % w(p), &
-                                   old_tiles(ti, tj, tk) % ind(p), 0, old_tiles(ti, tj, tk) % weight(p))
+              call createParticleFromAttributes(s, xi_new, yi_new, zi_new, &
+                                               old_tiles(ti, tj, tk) % dx(p), old_tiles(ti, tj, tk) % dy(p), &
+                                               old_tiles(ti, tj, tk) % dz(p), &
+                                               old_tiles(ti, tj, tk) % u(p), old_tiles(ti, tj, tk) % v(p), &
+                                               old_tiles(ti, tj, tk) % w(p), &
+#ifdef DEBUG
+                                               '`shift_particles`', &
+#endif
+                                               old_tiles(ti, tj, tk) % ind(p), mpi_rank, old_tiles(ti, tj, tk) % weight(p))
 
               species(s) % cntr_sp = species(s) % cntr_sp + 1
             end do
@@ -342,9 +347,6 @@ contains
           end do
         end do
       end do
-
-      if (allocated(species(s) % prtl_tile)) deallocate (species(s) % prtl_tile)
-      call move_alloc(new_tiles, species(s) % prtl_tile)
 
 #ifdef MPI
       recv_cnt_right = 0
@@ -372,30 +374,25 @@ contains
                         recv_left, recv_cnt_left, myMPI_ENROUTE, left_rank, 923, MPI_COMM_WORLD, istat, ierr)
 
       do p = 1, recv_cnt_right
-        xi_new = recv_right(p) % xi
-        yi_new = recv_right(p) % yi
-        zi_new = recv_right(p) % zi
-        ti_new = FLOOR(REAL(xi_new) / REAL(species(s) % tile_sx)) + 1
-        tj_new = FLOOR(REAL(yi_new) / REAL(species(s) % tile_sy)) + 1
-        tk_new = FLOOR(REAL(zi_new) / REAL(species(s) % tile_sz)) + 1
-        call append_to_tile(species(s) % prtl_tile(ti_new, tj_new, tk_new), xi_new, yi_new, zi_new, &
-                             recv_right(p) % dx, recv_right(p) % dy, recv_right(p) % dz, &
-                             recv_right(p) % u, recv_right(p) % v, recv_right(p) % w, &
-                             recv_right(p) % ind, recv_right(p) % proc, recv_right(p) % weight)
+        call createParticleFromAttributes(s, recv_right(p) % xi, recv_right(p) % yi, recv_right(p) % zi, &
+                                         recv_right(p) % dx, recv_right(p) % dy, recv_right(p) % dz, &
+                                         recv_right(p) % u, recv_right(p) % v, recv_right(p) % w, &
+#ifdef DEBUG
+                                         '`shift_particles recv_right`', &
+#endif
+                                         recv_right(p) % ind, recv_right(p) % proc, recv_right(p) % weight)
         species(s) % cntr_sp = species(s) % cntr_sp + 1
       end do
 
       do p = 1, recv_cnt_left
         xi_new = recv_left(p) % xi + INT(this_meshblock % ptr % sx, kind=2)
-        yi_new = recv_left(p) % yi
-        zi_new = recv_left(p) % zi
-        ti_new = FLOOR(REAL(xi_new) / REAL(species(s) % tile_sx)) + 1
-        tj_new = FLOOR(REAL(yi_new) / REAL(species(s) % tile_sy)) + 1
-        tk_new = FLOOR(REAL(zi_new) / REAL(species(s) % tile_sz)) + 1
-        call append_to_tile(species(s) % prtl_tile(ti_new, tj_new, tk_new), xi_new, yi_new, zi_new, &
-                             recv_left(p) % dx, recv_left(p) % dy, recv_left(p) % dz, &
-                             recv_left(p) % u, recv_left(p) % v, recv_left(p) % w, &
-                             recv_left(p) % ind, recv_left(p) % proc, recv_left(p) % weight)
+        call createParticleFromAttributes(s, xi_new, recv_left(p) % yi, recv_left(p) % zi, &
+                                         recv_left(p) % dx, recv_left(p) % dy, recv_left(p) % dz, &
+                                         recv_left(p) % u, recv_left(p) % v, recv_left(p) % w, &
+#ifdef DEBUG
+                                         '`shift_particles recv_left`', &
+#endif
+                                         recv_left(p) % ind, recv_left(p) % proc, recv_left(p) % weight)
         species(s) % cntr_sp = species(s) % cntr_sp + 1
       end do
 
@@ -404,6 +401,10 @@ contains
       if (allocated(recv_right)) deallocate (recv_right)
       if (allocated(recv_left)) deallocate (recv_left)
 #endif
+
+      if (allocated(old_tiles)) then
+        deallocate (old_tiles)
+      end if
     end do
   end subroutine shift_particles
 
