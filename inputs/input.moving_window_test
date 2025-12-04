@@ -30,9 +30,9 @@
 <moving_window>
 
   movwin        = 1
-  shiftinterval = 10
-  shiftstart    = 50
-  movwingam     = 0.2
+  shiftinterval = 1
+  shiftstart    = 0
+  movwingam     = 2000
 
 <algorithm>
 
@@ -45,10 +45,10 @@
 <output>
 
   start         = 0
-  interval      = 20
+  interval      = 10
   stride        = 1
   istep         = 1
-  flds_at_prtl  = 1
+  flds_at_prtl  = 0
   write_xdmf    = 1
 
   hst_enable    = 1
@@ -60,8 +60,8 @@
 
 <plasma>
 
-  ppc0          = 8
-  sigma         = 0
+  ppc0          = 100
+  sigma         = 1
   c_omp         = 10
 
 <particles>
@@ -80,10 +80,9 @@
 
 <problem>
 
-  background_n     = 8.0
-  background_T     = 1.0e-4
+  background_n     = 1
+  background_T     = 1.0e-1
   drift_gamma      = 1.0
   field_amplitude  = 1.0e-3
   field_wavelength = 32.0
   zero_current     = 1
-
