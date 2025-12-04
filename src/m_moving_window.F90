@@ -223,6 +223,11 @@ contains
 
     if (shift <= 0) return
 
+    ! After the window advances by `shift`, the physical coordinates of particles
+    ! stay the same in the global frame.  The mesh origin moves right by `shift`,
+    ! so ownership is decided by comparing the unchanged global index against the
+    ! new domain spans.  Local indices are derived by subtracting the *shifted*
+    ! mesh origins, matching the standard post-pusher exchange logic.
     global_min_new = INT(global_mesh % x0 + shift, kind=8)
     global_max_new = global_min_new + INT(global_mesh % sx - 1, kind=8)
     new_x0_local = INT(this_meshblock % ptr % x0 + shift, kind=8)
@@ -285,7 +290,9 @@ contains
             do p = 1, old_tiles(ti, tj, tk) % npart_sp
               yi_new = old_tiles(ti, tj, tk) % yi(p)
               zi_new = old_tiles(ti, tj, tk) % zi(p)
-              global_xi_new = INT(this_meshblock % ptr % x0 + old_tiles(ti, tj, tk) % xi(p), kind=8) - INT(shift, kind=8)
+              ! Keep the global coordinate fixed; ownership is re-evaluated
+              ! against the shifted mesh origins.
+              global_xi_new = INT(this_meshblock % ptr % x0 + old_tiles(ti, tj, tk) % xi(p), kind=8)
 
               if ((global_xi_new < global_min_new) .or. (global_xi_new > global_max_new)) cycle
 
