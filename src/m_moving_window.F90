@@ -385,7 +385,7 @@ contains
       end do
 
       do p = 1, recv_cnt_left
-        xi_new = recv_left(p) % xi + INT(this_meshblock % ptr % sx, kind=2)
+        xi_new = recv_left(p) % xi
         call createParticleFromAttributes(s, xi_new, recv_left(p) % yi, recv_left(p) % zi, &
                                          recv_left(p) % dx, recv_left(p) % dy, recv_left(p) % dz, &
                                          recv_left(p) % u, recv_left(p) % v, recv_left(p) % w, &
