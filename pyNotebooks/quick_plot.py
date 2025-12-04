@@ -11,12 +11,16 @@ input_params    = isolde.parseInput(input_file_name)
 interval        = input_params["output"]["interval"]
 lst_time        = input_params["time"]["last"]
 grid_x          = int(input_params["grid"]["mx0"])
+ncpux           = int(input_params["node_configuration"]["sixex"])
 Nsteps          = int(lst_time// interval)
 CC              = input_params["algorithm"]["c"]
 COMP            = input_params["plasma"]["c_omp"]
 SIGMA           = input_params["plasma"]["sigma"]
 B_norm          = CC**2 * SIGMA**0.5 / COMP
 omegap0         = CC / COMP
+
+domain_bounds = [i * grid_x // ncpux for i in range(ncpux)]
+
 
 def fetch_var_at_step(out_dir, var, step):
     """
@@ -137,8 +141,10 @@ def animate_phase(frame):
     ax2.set_xlabel(r"$x \omega_{p}/ c$",fontsize=14)
     ax2.xaxis.set_major_formatter(ticks_x)
     ax2.set_ylabel(r"$\gamma \beta$",fontsize=14)
-    ax2.set_ylim(-1.5, 1.5)
-    ax2.set_xlim(left = 0)
+    ax2.set_ylim(-1.5, 1.5)    
+    for x_bounds in domain_bounds:        
+        ax2.axvline(x = x_bounds + frame * interval * CC, color = "black", linestyle = "--")
+
     ax2.tick_params(axis='both', which='major', labelsize=12)
     # ax2.set_title(r"Phase space of counter-streaming $e^-$s at $\omega_{\rm p0}t = $" + "{:.2f}".format(frame * interval * omegap0),fontsize=15)
 
@@ -148,8 +154,8 @@ def animate_phase(frame):
     # d_fluc = ((density1[frame] + density2[frame]) - (density1[0] + density2[0]))/(density1[0] + density2[0])
     
     # ax3.plot(xx, d_fluc, color = "black")
-    ax3.plot(xx, Ey[frame,:]/B_norm, color = "black")
-    ax3.plot(xx, Bz[frame,:]/B_norm, color = "black")
+    ax3.plot(xx, Ey[frame,:]/B_norm, color = "red")
+    ax3.plot(xx, Bz[frame,:]/B_norm, color = "blue")
     # ax3.scatter(X2[frame, :], ux_2[frame, :], s = 0.5, color = "blue", label="electrons (-x)") 
     # ax.scatter(X3[frame, :], ux_3[frame, :], s = 0.05, color = "blue", label="antiprotons (+x)")
     # ax.scatter(X4[frame, :], ux_4[frame, :], s = 0.05, color = "green", label="protons (-x)") 
@@ -160,6 +166,9 @@ def animate_phase(frame):
     # ax3.set_ylabel(r"$\delta n_e/ n_{e,0}$",fontsize=14)
     ax3.set_ylabel(r"$E_y/ B_0, B_z/B_0$",fontsize=14)
     ax3.tick_params(axis='both', which='major', labelsize=12)
+
+    for x_bounds in domain_bounds:        
+        ax3.axvline(x = x_bounds + frame * interval * CC, color = "black", linestyle = "--")
     # ax3.set_ylim(-2, 2)
     # ax3.set_title(r"Density fluctuations at $\omega_{\rm p0}t = $" + "{:.2f}".format(frame * interval * omegap0),fontsize=15)
 
