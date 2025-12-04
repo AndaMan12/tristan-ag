@@ -2,7 +2,7 @@
 
 <node_configuration>
 
-  sizex         = 1
+  sizex         = 4
   sizey         = 1
   sizez         = 1
 
@@ -80,7 +80,7 @@
 
 <problem>
 
-  background_n     = 1
+  background_n     = 8
   background_T     = 1.0e-1
   drift_gamma      = 1.0
   field_amplitude  = 1.0e-3
