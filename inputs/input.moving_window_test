@@ -45,7 +45,7 @@
 <output>
 
   start         = 0
-  interval      = 10
+  interval      = 5
   stride        = 1
   istep         = 1
   flds_at_prtl  = 0
