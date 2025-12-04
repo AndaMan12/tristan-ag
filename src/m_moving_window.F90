@@ -203,6 +203,9 @@ contains
     integer :: s, ti, tj, tk, p
     integer :: ti_new, tj_new, tk_new
     integer(kind=2) :: xi_new, yi_new, zi_new
+    integer(kind=8) :: global_min_new, global_max_new
+    integer(kind=8) :: new_x0_local, new_x0_left, new_x0_right
+    integer(kind=8) :: global_xi_new
     type(particle_tile), allocatable :: old_tiles(:, :, :)
     type(particle_tile), allocatable :: new_tiles(:, :, :)
     integer :: total_npart
@@ -219,6 +222,10 @@ contains
     type(prtl_enroute), allocatable :: send_right(:), recv_left(:)
 
     if (shift <= 0) return
+
+    global_min_new = INT(global_mesh % x0 + shift, kind=8)
+    global_max_new = global_min_new + INT(global_mesh % sx - 1, kind=8)
+    new_x0_local = INT(this_meshblock % ptr % x0 + shift, kind=8)
 
     do s = 1, nspec
       call move_alloc(species(s) % prtl_tile, old_tiles)
@@ -241,12 +248,16 @@ contains
       left_rank = MPI_PROC_NULL
       right_rank = MPI_PROC_NULL
       left_sx = 0
+      new_x0_left = 0_8
+      new_x0_right = 0_8
       if (associated(this_meshblock % ptr % neighbor(-1, 0, 0) % ptr)) then
         left_rank = this_meshblock % ptr % neighbor(-1, 0, 0) % ptr % rnk
         left_sx = this_meshblock % ptr % neighbor(-1, 0, 0) % ptr % sx
+        new_x0_left = INT(this_meshblock % ptr % neighbor(-1, 0, 0) % ptr % x0 + shift, kind=8)
       end if
       if (associated(this_meshblock % ptr % neighbor(1, 0, 0) % ptr)) then
         right_rank = this_meshblock % ptr % neighbor(1, 0, 0) % ptr % rnk
+        new_x0_right = INT(this_meshblock % ptr % neighbor(1, 0, 0) % ptr % x0 + shift, kind=8)
       end if
 
       do tk = 1, species(s) % tile_nz
@@ -272,59 +283,63 @@ contains
         do tj = 1, species(s) % tile_ny
           do ti = 1, species(s) % tile_nx
             do p = 1, old_tiles(ti, tj, tk) % npart_sp
-              xi_new = old_tiles(ti, tj, tk) % xi(p) - shift
               yi_new = old_tiles(ti, tj, tk) % yi(p)
               zi_new = old_tiles(ti, tj, tk) % zi(p)
+              global_xi_new = INT(this_meshblock % ptr % x0 + old_tiles(ti, tj, tk) % xi(p), kind=8) - INT(shift, kind=8)
+
+              if ((global_xi_new < global_min_new) .or. (global_xi_new > global_max_new)) cycle
+
 
 #ifdef MPI
-              if (xi_new < 0) then
-                if (left_rank .ne. MPI_PROC_NULL) then
-                  send_cnt_left = send_cnt_left + 1
-                  send_left(send_cnt_left) % xi = xi_new + INT(left_sx, kind=2)
-                  send_left(send_cnt_left) % yi = yi_new
-                  send_left(send_cnt_left) % zi = zi_new
-                  send_left(send_cnt_left) % dx = old_tiles(ti, tj, tk) % dx(p)
-                  send_left(send_cnt_left) % dy = old_tiles(ti, tj, tk) % dy(p)
-                  send_left(send_cnt_left) % dz = old_tiles(ti, tj, tk) % dz(p)
-                  send_left(send_cnt_left) % u = old_tiles(ti, tj, tk) % u(p)
-                  send_left(send_cnt_left) % v = old_tiles(ti, tj, tk) % v(p)
-                  send_left(send_cnt_left) % w = old_tiles(ti, tj, tk) % w(p)
-                  send_left(send_cnt_left) % ind = old_tiles(ti, tj, tk) % ind(p)
-                  send_left(send_cnt_left) % proc = old_tiles(ti, tj, tk) % proc(p)
-                  send_left(send_cnt_left) % weight = old_tiles(ti, tj, tk) % weight(p)
+              if ((global_xi_new < new_x0_local) .and. (left_rank .ne. MPI_PROC_NULL)) then
+                xi_new = INT(global_xi_new - new_x0_left, kind=2)
+                send_cnt_left = send_cnt_left + 1
+                send_left(send_cnt_left) % xi = xi_new
+                send_left(send_cnt_left) % yi = yi_new
+                send_left(send_cnt_left) % zi = zi_new
+                send_left(send_cnt_left) % dx = old_tiles(ti, tj, tk) % dx(p)
+                send_left(send_cnt_left) % dy = old_tiles(ti, tj, tk) % dy(p)
+                send_left(send_cnt_left) % dz = old_tiles(ti, tj, tk) % dz(p)
+                send_left(send_cnt_left) % u = old_tiles(ti, tj, tk) % u(p)
+                send_left(send_cnt_left) % v = old_tiles(ti, tj, tk) % v(p)
+                send_left(send_cnt_left) % w = old_tiles(ti, tj, tk) % w(p)
+                send_left(send_cnt_left) % ind = old_tiles(ti, tj, tk) % ind(p)
+                send_left(send_cnt_left) % proc = old_tiles(ti, tj, tk) % proc(p)
+                send_left(send_cnt_left) % weight = old_tiles(ti, tj, tk) % weight(p)
 #ifdef PRTLPAYLOADS
-                  send_left(send_cnt_left) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
-                  send_left(send_cnt_left) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
-                  send_left(send_cnt_left) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
+                send_left(send_cnt_left) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
+                send_left(send_cnt_left) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
+                send_left(send_cnt_left) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
 #endif
-                end if
                 cycle
-              else if (xi_new >= this_meshblock % ptr % sx) then
-                if (right_rank .ne. MPI_PROC_NULL) then
-                  send_cnt_right = send_cnt_right + 1
-                  send_right(send_cnt_right) % xi = xi_new - INT(this_meshblock % ptr % sx, kind=2)
-                  send_right(send_cnt_right) % yi = yi_new
-                  send_right(send_cnt_right) % zi = zi_new
-                  send_right(send_cnt_right) % dx = old_tiles(ti, tj, tk) % dx(p)
-                  send_right(send_cnt_right) % dy = old_tiles(ti, tj, tk) % dy(p)
-                  send_right(send_cnt_right) % dz = old_tiles(ti, tj, tk) % dz(p)
-                  send_right(send_cnt_right) % u = old_tiles(ti, tj, tk) % u(p)
-                  send_right(send_cnt_right) % v = old_tiles(ti, tj, tk) % v(p)
-                  send_right(send_cnt_right) % w = old_tiles(ti, tj, tk) % w(p)
-                  send_right(send_cnt_right) % ind = old_tiles(ti, tj, tk) % ind(p)
-                  send_right(send_cnt_right) % proc = old_tiles(ti, tj, tk) % proc(p)
-                  send_right(send_cnt_right) % weight = old_tiles(ti, tj, tk) % weight(p)
+              else if ((global_xi_new >= new_x0_local + INT(this_meshblock % ptr % sx, kind=8)) &
+                       .and. (right_rank .ne. MPI_PROC_NULL)) then
+                xi_new = INT(global_xi_new - new_x0_right, kind=2)
+                send_cnt_right = send_cnt_right + 1
+                send_right(send_cnt_right) % xi = xi_new
+                send_right(send_cnt_right) % yi = yi_new
+                send_right(send_cnt_right) % zi = zi_new
+                send_right(send_cnt_right) % dx = old_tiles(ti, tj, tk) % dx(p)
+                send_right(send_cnt_right) % dy = old_tiles(ti, tj, tk) % dy(p)
+                send_right(send_cnt_right) % dz = old_tiles(ti, tj, tk) % dz(p)
+                send_right(send_cnt_right) % u = old_tiles(ti, tj, tk) % u(p)
+                send_right(send_cnt_right) % v = old_tiles(ti, tj, tk) % v(p)
+                send_right(send_cnt_right) % w = old_tiles(ti, tj, tk) % w(p)
+                send_right(send_cnt_right) % ind = old_tiles(ti, tj, tk) % ind(p)
+                send_right(send_cnt_right) % proc = old_tiles(ti, tj, tk) % proc(p)
+                send_right(send_cnt_right) % weight = old_tiles(ti, tj, tk) % weight(p)
 #ifdef PRTLPAYLOADS
-                  send_right(send_cnt_right) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
-                  send_right(send_cnt_right) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
-                  send_right(send_cnt_right) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
+                send_right(send_cnt_right) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
+                send_right(send_cnt_right) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
+                send_right(send_cnt_right) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
 #endif
-                end if
                 cycle
               end if
 #endif
 
-              if ((xi_new < 0) .or. (xi_new >= this_meshblock % ptr % sx)) cycle
+              if ((global_xi_new < new_x0_local) .or. (global_xi_new >= new_x0_local + INT(this_meshblock % ptr % sx, kind=8))) cycle
+
+              xi_new = INT(global_xi_new - new_x0_local, kind=2)
 
               ti_new = FLOOR(REAL(xi_new) / REAL(species(s) % tile_sx)) + 1
               tj_new = FLOOR(REAL(yi_new) / REAL(species(s) % tile_sy)) + 1
