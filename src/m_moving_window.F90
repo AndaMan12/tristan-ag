@@ -207,7 +207,8 @@ contains
     type(particle_tile), allocatable :: new_tiles(:, :, :)
     integer :: total_npart
 #ifdef MPI
-    integer :: ierr, left_rank, right_rank, left_sx, recv_cnt, send_cnt
+    integer :: ierr, left_rank, right_rank, left_sx
+    integer :: recv_cnt_right, recv_cnt_left, send_cnt_left, send_cnt_right
 #ifdef MPI08
     type(MPI_STATUS) :: istat
 #else
@@ -215,6 +216,7 @@ contains
 #endif
 #endif
     type(prtl_enroute), allocatable :: send_left(:), recv_right(:)
+    type(prtl_enroute), allocatable :: send_right(:), recv_left(:)
 
     if (shift <= 0) return
 
@@ -255,10 +257,13 @@ contains
 
       if (total_npart > 0) then
         allocate (send_left(total_npart))
+        allocate (send_right(total_npart))
       else
         allocate (send_left(0))
+        allocate (send_right(0))
       end if
-      send_cnt = 0
+      send_cnt_left = 0
+      send_cnt_right = 0
 #endif
 
       do tk = 1, species(s) % tile_nz
@@ -272,23 +277,45 @@ contains
 #ifdef MPI
               if (xi_new < 0) then
                 if (left_rank .ne. MPI_PROC_NULL) then
-                  send_cnt = send_cnt + 1
-                  send_left(send_cnt) % xi = xi_new + INT(left_sx, kind=2)
-                  send_left(send_cnt) % yi = yi_new
-                  send_left(send_cnt) % zi = zi_new
-                  send_left(send_cnt) % dx = old_tiles(ti, tj, tk) % dx(p)
-                  send_left(send_cnt) % dy = old_tiles(ti, tj, tk) % dy(p)
-                  send_left(send_cnt) % dz = old_tiles(ti, tj, tk) % dz(p)
-                  send_left(send_cnt) % u = old_tiles(ti, tj, tk) % u(p)
-                  send_left(send_cnt) % v = old_tiles(ti, tj, tk) % v(p)
-                  send_left(send_cnt) % w = old_tiles(ti, tj, tk) % w(p)
-                  send_left(send_cnt) % ind = old_tiles(ti, tj, tk) % ind(p)
-                  send_left(send_cnt) % proc = old_tiles(ti, tj, tk) % proc(p)
-                  send_left(send_cnt) % weight = old_tiles(ti, tj, tk) % weight(p)
+                  send_cnt_left = send_cnt_left + 1
+                  send_left(send_cnt_left) % xi = xi_new + INT(left_sx, kind=2)
+                  send_left(send_cnt_left) % yi = yi_new
+                  send_left(send_cnt_left) % zi = zi_new
+                  send_left(send_cnt_left) % dx = old_tiles(ti, tj, tk) % dx(p)
+                  send_left(send_cnt_left) % dy = old_tiles(ti, tj, tk) % dy(p)
+                  send_left(send_cnt_left) % dz = old_tiles(ti, tj, tk) % dz(p)
+                  send_left(send_cnt_left) % u = old_tiles(ti, tj, tk) % u(p)
+                  send_left(send_cnt_left) % v = old_tiles(ti, tj, tk) % v(p)
+                  send_left(send_cnt_left) % w = old_tiles(ti, tj, tk) % w(p)
+                  send_left(send_cnt_left) % ind = old_tiles(ti, tj, tk) % ind(p)
+                  send_left(send_cnt_left) % proc = old_tiles(ti, tj, tk) % proc(p)
+                  send_left(send_cnt_left) % weight = old_tiles(ti, tj, tk) % weight(p)
 #ifdef PRTLPAYLOADS
-                  send_left(send_cnt) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
-                  send_left(send_cnt) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
-                  send_left(send_cnt) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
+                  send_left(send_cnt_left) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
+                  send_left(send_cnt_left) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
+                  send_left(send_cnt_left) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
+#endif
+                end if
+                cycle
+              else if (xi_new >= this_meshblock % ptr % sx) then
+                if (right_rank .ne. MPI_PROC_NULL) then
+                  send_cnt_right = send_cnt_right + 1
+                  send_right(send_cnt_right) % xi = xi_new - INT(this_meshblock % ptr % sx, kind=2)
+                  send_right(send_cnt_right) % yi = yi_new
+                  send_right(send_cnt_right) % zi = zi_new
+                  send_right(send_cnt_right) % dx = old_tiles(ti, tj, tk) % dx(p)
+                  send_right(send_cnt_right) % dy = old_tiles(ti, tj, tk) % dy(p)
+                  send_right(send_cnt_right) % dz = old_tiles(ti, tj, tk) % dz(p)
+                  send_right(send_cnt_right) % u = old_tiles(ti, tj, tk) % u(p)
+                  send_right(send_cnt_right) % v = old_tiles(ti, tj, tk) % v(p)
+                  send_right(send_cnt_right) % w = old_tiles(ti, tj, tk) % w(p)
+                  send_right(send_cnt_right) % ind = old_tiles(ti, tj, tk) % ind(p)
+                  send_right(send_cnt_right) % proc = old_tiles(ti, tj, tk) % proc(p)
+                  send_right(send_cnt_right) % weight = old_tiles(ti, tj, tk) % weight(p)
+#ifdef PRTLPAYLOADS
+                  send_right(send_cnt_right) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
+                  send_right(send_cnt_right) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
+                  send_right(send_cnt_right) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
 #endif
                 end if
                 cycle
@@ -320,19 +347,31 @@ contains
       call move_alloc(new_tiles, species(s) % prtl_tile)
 
 #ifdef MPI
-      recv_cnt = 0
-      call MPI_SENDRECV(send_cnt, 1, MPI_INTEGER, left_rank, 920, &
-                        recv_cnt, 1, MPI_INTEGER, right_rank, 920, MPI_COMM_WORLD, istat, ierr)
-      if (recv_cnt > 0) then
-        allocate (recv_right(recv_cnt))
+      recv_cnt_right = 0
+      recv_cnt_left = 0
+
+      call MPI_SENDRECV(send_cnt_left, 1, MPI_INTEGER, left_rank, 920, &
+                        recv_cnt_right, 1, MPI_INTEGER, right_rank, 920, MPI_COMM_WORLD, istat, ierr)
+      call MPI_SENDRECV(send_cnt_right, 1, MPI_INTEGER, right_rank, 922, &
+                        recv_cnt_left, 1, MPI_INTEGER, left_rank, 922, MPI_COMM_WORLD, istat, ierr)
+
+      if (recv_cnt_right > 0) then
+        allocate (recv_right(recv_cnt_right))
       else
         allocate (recv_right(0))
       end if
+      if (recv_cnt_left > 0) then
+        allocate (recv_left(recv_cnt_left))
+      else
+        allocate (recv_left(0))
+      end if
 
-      call MPI_SENDRECV(send_left, send_cnt, myMPI_ENROUTE, left_rank, 921, &
-                        recv_right, recv_cnt, myMPI_ENROUTE, right_rank, 921, MPI_COMM_WORLD, istat, ierr)
+      call MPI_SENDRECV(send_left, send_cnt_left, myMPI_ENROUTE, left_rank, 921, &
+                        recv_right, recv_cnt_right, myMPI_ENROUTE, right_rank, 921, MPI_COMM_WORLD, istat, ierr)
+      call MPI_SENDRECV(send_right, send_cnt_right, myMPI_ENROUTE, right_rank, 923, &
+                        recv_left, recv_cnt_left, myMPI_ENROUTE, left_rank, 923, MPI_COMM_WORLD, istat, ierr)
 
-      do p = 1, recv_cnt
+      do p = 1, recv_cnt_right
         xi_new = recv_right(p) % xi
         yi_new = recv_right(p) % yi
         zi_new = recv_right(p) % zi
@@ -346,8 +385,24 @@ contains
         species(s) % cntr_sp = species(s) % cntr_sp + 1
       end do
 
+      do p = 1, recv_cnt_left
+        xi_new = recv_left(p) % xi + INT(this_meshblock % ptr % sx, kind=2)
+        yi_new = recv_left(p) % yi
+        zi_new = recv_left(p) % zi
+        ti_new = FLOOR(REAL(xi_new) / REAL(species(s) % tile_sx)) + 1
+        tj_new = FLOOR(REAL(yi_new) / REAL(species(s) % tile_sy)) + 1
+        tk_new = FLOOR(REAL(zi_new) / REAL(species(s) % tile_sz)) + 1
+        call append_to_tile(species(s) % prtl_tile(ti_new, tj_new, tk_new), xi_new, yi_new, zi_new, &
+                             recv_left(p) % dx, recv_left(p) % dy, recv_left(p) % dz, &
+                             recv_left(p) % u, recv_left(p) % v, recv_left(p) % w, &
+                             recv_left(p) % ind, recv_left(p) % proc, recv_left(p) % weight)
+        species(s) % cntr_sp = species(s) % cntr_sp + 1
+      end do
+
       if (allocated(send_left)) deallocate (send_left)
+      if (allocated(send_right)) deallocate (send_right)
       if (allocated(recv_right)) deallocate (recv_right)
+      if (allocated(recv_left)) deallocate (recv_left)
 #endif
     end do
   end subroutine shift_particles

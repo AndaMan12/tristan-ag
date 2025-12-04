@@ -1,3 +1,5 @@
+# Minimal moving-window smoke test for a uniform plasma with a sinusoidal Ex marker
+
 <node_configuration>
 
   sizex         = 1
