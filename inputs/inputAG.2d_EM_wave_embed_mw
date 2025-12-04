@@ -1,7 +1,7 @@
 <node_configuration>
 
-  sizex  =  40
-  sizey  =  8
+  sizex  =  10
+  sizey  =  1
 
 <time>
 
@@ -10,7 +10,7 @@
 <grid>
 
   mx0  =  5000
-  my0  =  2400
+  my0  =  100
   boundary_x = 0
   abs_thick = 50
   absorb_x = 0
@@ -22,9 +22,9 @@
 <moving_window>
 
   movwin       = 1
-  shiftstart   = 2000
+  shiftstart   = 10
   shiftinterval = 20
-  movwingam    = 5.0   # gamma of the window (beta~0.98); set <1 to supply beta directly
+  movwingam    = 0.5403023   # gamma of the window (beta~0.98); set <1 to supply beta directly
 
 <algorithm>
 
@@ -36,12 +36,12 @@
 <output>
 
   enable        = 1              # enable/disable output [1]
-  flds_enable   = 0              # field output [1]
+  flds_enable   = 1              # field output [1]
   prtl_enable   = 1              # prtl output [1]
   hst_enable  =  0
   hst_interval  =  200
-  interval = 2
-  stride = 10
+  interval = 100
+  stride = 100
 
   usr_enable = 0
   usr_interval = 200
