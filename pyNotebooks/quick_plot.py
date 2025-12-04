@@ -154,8 +154,8 @@ def animate_phase(frame):
     # d_fluc = ((density1[frame] + density2[frame]) - (density1[0] + density2[0]))/(density1[0] + density2[0])
     
     # ax3.plot(xx, d_fluc, color = "black")
-    ax3.plot(xx, Ey[frame,:]/B_norm, color = "red")
-    ax3.plot(xx, Bz[frame,:]/B_norm, color = "blue")
+    ax3.plot(xx + frame * interval * CC, Ey[frame,:]/B_norm, color = "red")
+    ax3.plot(xx + frame * interval * CC, Bz[frame,:]/B_norm, color = "blue")
     # ax3.scatter(X2[frame, :], ux_2[frame, :], s = 0.5, color = "blue", label="electrons (-x)") 
     # ax.scatter(X3[frame, :], ux_3[frame, :], s = 0.05, color = "blue", label="antiprotons (+x)")
     # ax.scatter(X4[frame, :], ux_4[frame, :], s = 0.05, color = "green", label="protons (-x)") 
