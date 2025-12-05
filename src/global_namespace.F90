@@ -68,8 +68,7 @@ module m_globalnamespace
 #endif
 
   ! variables visible globally defined by the user
-  real :: global_usr_variable_1, global_usr_variable_2, global_usr_variable_3
-  real :: x_box_min_abs = 0.0   ! absolute position (in cells) of i=0 at current time
+  real :: global_usr_variable_1, global_usr_variable_2, global_usr_variable_3  
 contains
   subroutine renormalizeUnits()
     implicit none
