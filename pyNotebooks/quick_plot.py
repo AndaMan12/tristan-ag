@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import tristanVis.isolde as isolde
 from tqdm import tqdm
 
-out_dir = "../slurm_scripts/output/"
+out_dir = "/scratch/10446/anindya_12/tristan_mp_v2/slurm_scripts/output/"
 # input_file_name = "../inputs/inputAG.2d_EM_wave_embed_mw"
-input_file_name = "../slurm_scripts/temp_input_psi0.5_mul13_mul20.1_TT1.9e-2.in"
+input_file_name = "/scratch/10446/anindya_12/tristan_mp_v2/slurm_scripts/temp_input_psi0.5_mul13_mul20.1_TT1.9e-2.in"
 # hist            = isolde.parseHistory(out_dir + "history")
 input_params    = isolde.parseInput(input_file_name)
 interval        = input_params["output"]["interval"]
-lst_time        = 6000 #input_params["time"]["last"]
+lst_time        = 12000 #input_params["time"]["last"]
 grid_x          = int(input_params["grid"]["mx0"])
 ncpux           = int(input_params["node_configuration"]["sizex"])
 Nsteps          = int(lst_time// interval)
