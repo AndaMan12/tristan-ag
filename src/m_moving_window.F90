@@ -231,85 +231,85 @@ contains
     end if
   end subroutine refill_new_region
 
-  subroutine initialize_tile(tile, s, ti, tj, tk)
-    implicit none
-    type(particle_tile), intent(inout) :: tile
-    integer, intent(in) :: s, ti, tj, tk
-    integer :: maxptl_on_tile
+  ! subroutine initialize_tile(tile, s, ti, tj, tk)
+  !   implicit none
+  !   type(particle_tile), intent(inout) :: tile
+  !   integer, intent(in) :: s, ti, tj, tk
+  !   integer :: maxptl_on_tile
 
-    maxptl_on_tile = INT(maxptl_array(s) / INT(species(s) % tile_nx * species(s) % tile_ny * species(s) % tile_nz, 8), 4)
-    maxptl_on_tile = ((maxptl_on_tile + VEC_LEN - 1) / VEC_LEN) * VEC_LEN
+  !   maxptl_on_tile = INT(maxptl_array(s) / INT(species(s) % tile_nx * species(s) % tile_ny * species(s) % tile_nz, 8), 4)
+  !   maxptl_on_tile = ((maxptl_on_tile + VEC_LEN - 1) / VEC_LEN) * VEC_LEN
 
-    tile % spec = s
-    tile % x1 = (ti - 1) * species(s) % tile_sx
-    tile % x2 = min(ti * species(s) % tile_sx, this_meshblock % ptr % sx)
-    tile % y1 = (tj - 1) * species(s) % tile_sy
-    tile % y2 = min(tj * species(s) % tile_sy, this_meshblock % ptr % sy)
-    tile % z1 = (tk - 1) * species(s) % tile_sz
-    tile % z2 = min(tk * species(s) % tile_sz, this_meshblock % ptr % sz)
+  !   tile % spec = s
+  !   tile % x1 = (ti - 1) * species(s) % tile_sx
+  !   tile % x2 = min(ti * species(s) % tile_sx, this_meshblock % ptr % sx)
+  !   tile % y1 = (tj - 1) * species(s) % tile_sy
+  !   tile % y2 = min(tj * species(s) % tile_sy, this_meshblock % ptr % sy)
+  !   tile % z1 = (tk - 1) * species(s) % tile_sz
+  !   tile % z2 = min(tk * species(s) % tile_sz, this_meshblock % ptr % sz)
 
-    call allocateParticlesOnEmptyTile(tile, maxptl_on_tile)
-  end subroutine initialize_tile
+  !   call allocateParticlesOnEmptyTile(tile, maxptl_on_tile)
+  ! end subroutine initialize_tile
 
-  subroutine append_to_tile(tile, xi, yi, zi, dx, dy, dz, u, v, w, ind, proc, weight)
-    implicit none
-    type(particle_tile), intent(inout) :: tile
-    integer, intent(in) :: ind, proc
-    integer(kind=2), intent(in) :: xi, yi, zi
-    real, intent(in) :: dx, dy, dz, u, v, w, weight
-    integer :: p_new
+!   subroutine append_to_tile(tile, xi, yi, zi, dx, dy, dz, u, v, w, ind, proc, weight)
+!     implicit none
+!     type(particle_tile), intent(inout) :: tile
+!     integer, intent(in) :: ind, proc
+!     integer(kind=2), intent(in) :: xi, yi, zi
+!     real, intent(in) :: dx, dy, dz, u, v, w, weight
+!     integer :: p_new
 
-#ifdef DEBUG
-    if ((xi < tile % x1) .or. (xi >= tile % x2)) then
-      call throwError('Moving window attempted to place particle outside tile bounds in x.')
-    end if
-#endif
+! #ifdef DEBUG
+!     if ((xi < tile % x1) .or. (xi >= tile % x2)) then
+!       call throwError('Moving window attempted to place particle outside tile bounds in x.')
+!     end if
+! #endif
 
-    if (tile % npart_sp >= tile % maxptl_sp) then
-      if (resize_tiles) then
-        call reallocTileSize(tile, .true.)
-      else
-        call throwError('Moving window ran out of particle capacity when shifting tiles.')
-      end if
-    end if
+!     if (tile % npart_sp >= tile % maxptl_sp) then
+!       if (resize_tiles) then
+!         call reallocTileSize(tile, .true.)
+!       else
+!         call throwError('Moving window ran out of particle capacity when shifting tiles.')
+!       end if
+!     end if
 
-    p_new = tile % npart_sp + 1
-    tile % xi(p_new) = xi
-    tile % yi(p_new) = yi
-    tile % zi(p_new) = zi
-    tile % dx(p_new) = dx
-    tile % dy(p_new) = dy
-    tile % dz(p_new) = dz
-    tile % u(p_new) = u
-    tile % v(p_new) = v
-    tile % w(p_new) = w
-    tile % ind(p_new) = ind
-    tile % proc(p_new) = proc
-    tile % weight(p_new) = weight
-    tile % npart_sp = p_new
-  end subroutine append_to_tile
+!     p_new = tile % npart_sp + 1
+!     tile % xi(p_new) = xi
+!     tile % yi(p_new) = yi
+!     tile % zi(p_new) = zi
+!     tile % dx(p_new) = dx
+!     tile % dy(p_new) = dy
+!     tile % dz(p_new) = dz
+!     tile % u(p_new) = u
+!     tile % v(p_new) = v
+!     tile % w(p_new) = w
+!     tile % ind(p_new) = ind
+!     tile % proc(p_new) = proc
+!     tile % weight(p_new) = weight
+!     tile % npart_sp = p_new
+!   end subroutine append_to_tile
 
-  subroutine clear_tile(tile)
-    implicit none
-    type(particle_tile), intent(inout) :: tile
-    if (allocated(tile % xi)) deallocate (tile % xi)
-    if (allocated(tile % yi)) deallocate (tile % yi)
-    if (allocated(tile % zi)) deallocate (tile % zi)
-    if (allocated(tile % dx)) deallocate (tile % dx)
-    if (allocated(tile % dy)) deallocate (tile % dy)
-    if (allocated(tile % dz)) deallocate (tile % dz)
-    if (allocated(tile % u)) deallocate (tile % u)
-    if (allocated(tile % v)) deallocate (tile % v)
-    if (allocated(tile % w)) deallocate (tile % w)
-    if (allocated(tile % ind)) deallocate (tile % ind)
-    if (allocated(tile % proc)) deallocate (tile % proc)
-    if (allocated(tile % weight)) deallocate (tile % weight)
-#ifdef PRTLPAYLOADS
-    if (allocated(tile % payload1)) deallocate (tile % payload1)
-    if (allocated(tile % payload2)) deallocate (tile % payload2)
-    if (allocated(tile % payload3)) deallocate (tile % payload3)
-#endif
-  end subroutine clear_tile
+!   subroutine clear_tile(tile)
+!     implicit none
+!     type(particle_tile), intent(inout) :: tile
+!     if (allocated(tile % xi)) deallocate (tile % xi)
+!     if (allocated(tile % yi)) deallocate (tile % yi)
+!     if (allocated(tile % zi)) deallocate (tile % zi)
+!     if (allocated(tile % dx)) deallocate (tile % dx)
+!     if (allocated(tile % dy)) deallocate (tile % dy)
+!     if (allocated(tile % dz)) deallocate (tile % dz)
+!     if (allocated(tile % u)) deallocate (tile % u)
+!     if (allocated(tile % v)) deallocate (tile % v)
+!     if (allocated(tile % w)) deallocate (tile % w)
+!     if (allocated(tile % ind)) deallocate (tile % ind)
+!     if (allocated(tile % proc)) deallocate (tile % proc)
+!     if (allocated(tile % weight)) deallocate (tile % weight)
+! #ifdef PRTLPAYLOADS
+!     if (allocated(tile % payload1)) deallocate (tile % payload1)
+!     if (allocated(tile % payload2)) deallocate (tile % payload2)
+!     if (allocated(tile % payload3)) deallocate (tile % payload3)
+! #endif
+!   end subroutine clear_tile
 end module m_moving_window
 #else
 module m_moving_window
