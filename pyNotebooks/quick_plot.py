@@ -37,10 +37,6 @@ def fetch_var_at_step(out_dir, var, step):
         return False
 
 
-
-
-
-
 X1   = []
 ux_1 = []
 X2   = []
@@ -132,8 +128,8 @@ def animate_phase(frame):
     ax2.clear()
     # ax.scatter(0, -0.2)
     # ax.scatter(0, 0.2)
-    ax2.scatter(X1[frame][:], ux_1[frame][:], s = 0.8, color = "red", label="electrons (+x)")
-    ax2.scatter(X2[frame][:], ux_2[frame][:], s = 0.8, color = "blue", label="electrons (-x)") 
+    ax2.scatter(X1[frame][:], ux_1[frame][:], s = 1, color = "red", label="electrons (+x)")
+    ax2.scatter(X2[frame][:], ux_2[frame][:], s = 1, color = "blue", label="electrons (-x)") 
     # ax.scatter(X3[frame, :], ux_3[frame, :], s = 0.05, color = "blue", label="antiprotons (+x)")
     # ax.scatter(X4[frame, :], ux_4[frame, :], s = 0.05, color = "green", label="protons (-x)") 
     ax2.text(0.01, 0.87, r"$\omega_{p}t = $" + "{:.2f}".format(frame * interval * omegap0), fontsize=12, transform=ax2.transAxes)
@@ -200,7 +196,7 @@ ani = FuncAnimation(fig, animate_phase, frames=tqdm(range(Nsteps)), blit=False)
 
 # Save the animation
 writer = PillowWriter(fps=1, bitrate=2400)  # You can increase FPS if needed
-ani.save("moving_window_test_no.gif", writer=writer, dpi=300)
+ani.save("moving_window_test_3.gif", writer=writer, dpi=300)
 # animate_phase(490)
 # User-defined coordinates for the arrows
 # Here's a sample code where you can adjust the coordinates.
