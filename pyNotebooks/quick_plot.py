@@ -138,9 +138,9 @@ def animate_phase(frame):
     ax2.set_xlabel(r"$x \omega_{p}/ c$",fontsize=14)
     ax2.xaxis.set_major_formatter(ticks_x)
     ax2.set_ylabel(r"$\gamma \beta$",fontsize=14)
-    ax2.set_ylim(-1.5, 1.5)    
+    # ax2.set_ylim(-1.5, 1.5)    
     for x_bounds in domain_bounds:        
-        ax2.axvline(x = x_bounds + frame * interval * CC, color = "black", linestyle = "--")
+        ax2.axvline(x = x_bounds + frame * interval * CC * np.cos(0.5), color = "black", linestyle = "--")
 
     ax2.tick_params(axis='both', which='major', labelsize=12)
     # ax2.set_title(r"Phase space of counter-streaming $e^-$s at $\omega_{\rm p0}t = $" + "{:.2f}".format(frame * interval * omegap0),fontsize=15)
@@ -165,7 +165,7 @@ def animate_phase(frame):
     ax3.tick_params(axis='both', which='major', labelsize=12)
 
     for x_bounds in domain_bounds:        
-        ax3.axvline(x = x_bounds + frame * interval * CC, color = "black", linestyle = "--")
+        ax3.axvline(x = x_bounds + frame * interval * CC * np.cos(0.5), color = "black", linestyle = "--")
     # ax3.set_ylim(-2, 2)
     # ax3.set_title(r"Density fluctuations at $\omega_{\rm p0}t = $" + "{:.2f}".format(frame * interval * omegap0),fontsize=15)
 
