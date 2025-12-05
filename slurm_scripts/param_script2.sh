@@ -6,7 +6,7 @@
 #SBATCH -p normal
 #SBATCH -t 01:00:00  # dd-hh:mm:ss
 #SBATCH -N 1
-#SBATCH -n 10
+#SBATCH -n 20
 #SBATCH --output=%x-%j.log
 
 # Load necessary modules
