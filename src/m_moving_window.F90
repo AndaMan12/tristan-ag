@@ -214,22 +214,30 @@ contains
 
 
 
-  subroutine refill_new_region(shift)
-    implicit none
-    integer, intent(in) :: shift
-    real(kind=dprec) :: xmin_d, xmax_d
-    real :: xmin, xmax
+subroutine refill_new_region(shift)
+  implicit none
+  integer, intent(in) :: shift
+  real(kind=dprec) :: xmin_d, xmax_d
+  real :: xmin, xmax
+  logical :: is_rightmost
 
-    if (.not. associated(this_meshblock % ptr % neighbor(1, 0, 0) % ptr)) then
-      xmin_d = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - shift, kind=dprec)
-      xmax_d = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - 1, kind=dprec)
+  ! Pick the global rightmost meshblock, independent of periodic BCs.
+  is_rightmost = ( this_meshblock % ptr % x0 + this_meshblock % ptr % sx == &
+                   global_mesh   % x0      + global_mesh   % sx )
 
-      xmin = REAL(xmin_d)
-      xmax = REAL(xmax_d)
+  if (.not. is_rightmost) return
 
-      call userFillNewRegion(xmin, xmax)
-    end if
-  end subroutine refill_new_region
+  ! New cells have indices [x0+sx-shift, ..., x0+sx-1].
+  ! Pass the *edge* interval [left_edge, right_edge) = [x0+sx-shift, x0+sx]
+  xmin_d = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx - shift, kind=dprec)
+  xmax_d = REAL(this_meshblock % ptr % x0 + this_meshblock % ptr % sx,           kind=dprec)
+
+  xmin = REAL(xmin_d)
+  xmax = REAL(xmax_d)
+
+  call userFillNewRegion(xmin, xmax)
+end subroutine refill_new_region
+
 
   ! subroutine initialize_tile(tile, s, ti, tj, tk)
   !   implicit none
