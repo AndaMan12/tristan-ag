@@ -5,7 +5,7 @@ module m_moving_window
   use m_domain
   use m_fields
   use m_particles
-  use m_particlelogistics
+  use m_particlelogistics, only: shiftParticlesX
   use m_readinput, only: getInput
   use m_userfile, only: userFillNewRegion
   implicit none
@@ -197,254 +197,19 @@ contains
     deallocate (recv_ex, recv_ey, recv_ez, recv_bx, recv_by, recv_bz, recv_jx, recv_jy, recv_jz)
   end subroutine shift_fields
 
-  subroutine shift_particles(shift)
+  subroutine shift_particles(shift)    
     implicit none
     integer, intent(in) :: shift
-    integer :: s, ti, tj, tk, p
-    integer :: ti_new, tj_new, tk_new
-    integer(kind=2) :: xi_new, yi_new, zi_new
-    integer(kind=8) :: global_min_new, global_max_new
-    integer(kind=8) :: new_x0_local, new_x0_left, new_x0_right
-    integer(kind=8) :: global_xi_new
-    type(particle_tile), allocatable :: old_tiles(:, :, :)
-    type(particle_tile), allocatable :: new_tiles(:, :, :)
-    integer :: total_npart
-#ifdef MPI
-    integer :: ierr, left_rank, right_rank, left_sx
-    integer :: recv_cnt_right, recv_cnt_left, send_cnt_left, send_cnt_right
-#ifdef MPI08
-    type(MPI_STATUS) :: istat
-#else
-    integer :: istat(MPI_STATUS_SIZE)
-#endif
-#endif
-    type(prtl_enroute), allocatable :: send_left(:), recv_right(:)
-    type(prtl_enroute), allocatable :: send_right(:), recv_left(:)
 
     if (shift <= 0) return
 
-    ! Window moves +x by `shift`.
-    ! We keep particle global coordinates fixed and slide the domain.
-    global_min_new = INT(global_mesh % x0 + shift, kind=8)
-    global_max_new = global_min_new + INT(global_mesh % sx - 1, kind=8)
-    new_x0_local   = INT(this_meshblock % ptr % x0 + shift, kind=8)
+    ! We are moving the *window* +shift in x, which in code coordinates
+    ! is equivalent to shifting *all particles* by -shift in xi.
+    call shiftParticlesX(-shift)
 
-    do s = 1, nspec
-      ! Take ownership of the current tiles and create fresh empty ones
-      call move_alloc(species(s) % prtl_tile, old_tiles)
-
-      allocate (new_tiles(species(s) % tile_nx, species(s) % tile_ny, species(s) % tile_nz))
-      do tk = 1, species(s) % tile_nz
-        do tj = 1, species(s) % tile_ny
-          do ti = 1, species(s) % tile_nx
-            call initialize_tile(new_tiles(ti, tj, tk), s, ti, tj, tk)
-          end do
-        end do
-      end do
-
-      call move_alloc(new_tiles, species(s) % prtl_tile)
-
-      species(s) % cntr_sp = 0
-      total_npart = 0
-
-#ifdef MPI
-      left_rank  = MPI_PROC_NULL
-      right_rank = MPI_PROC_NULL
-      left_sx    = 0
-      new_x0_left  = 0_8
-      new_x0_right = 0_8
-
-      if (associated(this_meshblock % ptr % neighbor(-1, 0, 0) % ptr)) then
-        left_rank = this_meshblock % ptr % neighbor(-1, 0, 0) % ptr % rnk
-        left_sx   = this_meshblock % ptr % neighbor(-1, 0, 0) % ptr % sx
-        ! New origin of LEFT neighbour = our new origin - size of left block
-        new_x0_left = new_x0_local - INT(left_sx, kind=8)
-      end if
-
-      if (associated(this_meshblock % ptr % neighbor(1, 0, 0) % ptr)) then
-        right_rank = this_meshblock % ptr % neighbor(1, 0, 0) % ptr % rnk
-        ! New origin of RIGHT neighbour = our new origin + our size
-        new_x0_right = new_x0_local + INT(this_meshblock % ptr % sx, kind=8)
-      end if
-
-      ! Count particles so we can size the send buffers
-      do tk = 1, species(s) % tile_nz
-        do tj = 1, species(s) % tile_ny
-          do ti = 1, species(s) % tile_nx
-            total_npart = total_npart + old_tiles(ti, tj, tk) % npart_sp
-          end do
-        end do
-      end do
-
-      if (total_npart > 0) then
-        allocate (send_left(total_npart))
-        allocate (send_right(total_npart))
-      else
-        allocate (send_left(0))
-        allocate (send_right(0))
-      end if
-      send_cnt_left  = 0
-      send_cnt_right = 0
-#endif
-
-      ! Loop over old tiles and redistribute particles
-      do tk = 1, size(old_tiles, 3)
-        do tj = 1, size(old_tiles, 2)
-          do ti = 1, size(old_tiles, 1)
-            do p = 1, old_tiles(ti, tj, tk) % npart_sp
-              yi_new = old_tiles(ti, tj, tk) % yi(p)
-              zi_new = old_tiles(ti, tj, tk) % zi(p)
-
-              ! Global index BEFORE move; domain will slide relative to this
-              global_xi_new = INT(this_meshblock % ptr % x0 + &
-                                  old_tiles(ti, tj, tk) % xi(p), kind=8)
-
-              ! If particle leaves the whole moving window, drop it
-              if ((global_xi_new < global_min_new) .or. (global_xi_new > global_max_new)) cycle
-
-#ifdef MPI
-              ! Sent to LEFT neighbour?
-              if ((global_xi_new < new_x0_local) .and. (left_rank .ne. MPI_PROC_NULL)) then
-                xi_new = INT(global_xi_new - new_x0_left, kind=2)
-
-                send_cnt_left = send_cnt_left + 1
-                send_left(send_cnt_left) % xi = xi_new
-                send_left(send_cnt_left) % yi = yi_new
-                send_left(send_cnt_left) % zi = zi_new
-                send_left(send_cnt_left) % dx = old_tiles(ti, tj, tk) % dx(p)
-                send_left(send_cnt_left) % dy = old_tiles(ti, tj, tk) % dy(p)
-                send_left(send_cnt_left) % dz = old_tiles(ti, tj, tk) % dz(p)
-                send_left(send_cnt_left) % u  = old_tiles(ti, tj, tk) % u(p)
-                send_left(send_cnt_left) % v  = old_tiles(ti, tj, tk) % v(p)
-                send_left(send_cnt_left) % w  = old_tiles(ti, tj, tk) % w(p)
-                send_left(send_cnt_left) % ind    = old_tiles(ti, tj, tk) % ind(p)
-                send_left(send_cnt_left) % proc   = old_tiles(ti, tj, tk) % proc(p)
-                send_left(send_cnt_left) % weight = old_tiles(ti, tj, tk) % weight(p)
-#ifdef PRTLPAYLOADS
-                send_left(send_cnt_left) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
-                send_left(send_cnt_left) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
-                send_left(send_cnt_left) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
-#endif
-                cycle
-              end if
-
-              ! Sent to RIGHT neighbour?
-              if ((global_xi_new >= new_x0_local + INT(this_meshblock % ptr % sx, kind=8)) &
-                   .and. (right_rank .ne. MPI_PROC_NULL)) then
-                xi_new = INT(global_xi_new - new_x0_right, kind=2)
-
-                send_cnt_right = send_cnt_right + 1
-                send_right(send_cnt_right) % xi = xi_new
-                send_right(send_cnt_right) % yi = yi_new
-                send_right(send_cnt_right) % zi = zi_new
-                send_right(send_cnt_right) % dx = old_tiles(ti, tj, tk) % dx(p)
-                send_right(send_cnt_right) % dy = old_tiles(ti, tj, tk) % dy(p)
-                send_right(send_cnt_right) % dz = old_tiles(ti, tj, tk) % dz(p)
-                send_right(send_cnt_right) % u  = old_tiles(ti, tj, tk) % u(p)
-                send_right(send_cnt_right) % v  = old_tiles(ti, tj, tk) % v(p)
-                send_right(send_cnt_right) % w  = old_tiles(ti, tj, tk) % w(p)
-                send_right(send_cnt_right) % ind    = old_tiles(ti, tj, tk) % ind(p)
-                send_right(send_cnt_right) % proc   = old_tiles(ti, tj, tk) % proc(p)
-                send_right(send_cnt_right) % weight = old_tiles(ti, tj, tk) % weight(p)
-#ifdef PRTLPAYLOADS
-                send_right(send_cnt_right) % payload1 = old_tiles(ti, tj, tk) % payload1(p)
-                send_right(send_cnt_right) % payload2 = old_tiles(ti, tj, tk) % payload2(p)
-                send_right(send_cnt_right) % payload3 = old_tiles(ti, tj, tk) % payload3(p)
-#endif
-                cycle
-              end if
-#endif  ! MPI
-
-              ! Otherwise, particle belongs to THIS rank after shift
-              if ((global_xi_new < new_x0_local) .or. &
-                  (global_xi_new >= new_x0_local + INT(this_meshblock % ptr % sx, kind=8))) cycle
-
-              xi_new = INT(global_xi_new - new_x0_local, kind=2)
-
-              ti_new = FLOOR(REAL(xi_new) / REAL(species(s) % tile_sx)) + 1
-              tj_new = FLOOR(REAL(yi_new) / REAL(species(s) % tile_sy)) + 1
-              tk_new = FLOOR(REAL(zi_new) / REAL(species(s) % tile_sz)) + 1
-
-              call createParticleFromAttributes( &
-                   s, xi_new, yi_new, zi_new, &
-                   old_tiles(ti, tj, tk) % dx(p), old_tiles(ti, tj, tk) % dy(p), &
-                   old_tiles(ti, tj, tk) % dz(p), &
-                   old_tiles(ti, tj, tk) % u(p),  old_tiles(ti, tj, tk) % v(p), &
-                   old_tiles(ti, tj, tk) % w(p), &
-#ifdef DEBUG
-                   '`shift_particles`', &
-#endif
-                   old_tiles(ti, tj, tk) % ind(p), mpi_rank, &
-                   old_tiles(ti, tj, tk) % weight(p))
-
-              species(s) % cntr_sp = species(s) % cntr_sp + 1
-            end do
-
-            call clear_tile(old_tiles(ti, tj, tk))
-          end do
-        end do
-      end do
-
-#ifdef MPI
-      ! --- Exchange the send buffers with neighbours ---
-
-      recv_cnt_right = 0
-      recv_cnt_left  = 0
-
-      call MPI_SENDRECV(send_cnt_left,  1, MPI_INTEGER, left_rank,  920, &
-                        recv_cnt_right, 1, MPI_INTEGER, right_rank, 920, MPI_COMM_WORLD, istat, ierr)
-      call MPI_SENDRECV(send_cnt_right, 1, MPI_INTEGER, right_rank, 922, &
-                        recv_cnt_left,  1, MPI_INTEGER, left_rank,  922, MPI_COMM_WORLD, istat, ierr)
-
-      if (recv_cnt_right > 0) then
-        allocate (recv_right(recv_cnt_right))
-      else
-        allocate (recv_right(0))
-      end if
-      if (recv_cnt_left > 0) then
-        allocate (recv_left(recv_cnt_left))
-      else
-        allocate (recv_left(0))
-      end if
-
-      call MPI_SENDRECV(send_left,  send_cnt_left,  myMPI_ENROUTE, left_rank,  921, &
-                        recv_right, recv_cnt_right, myMPI_ENROUTE, right_rank, 921, MPI_COMM_WORLD, istat, ierr)
-      call MPI_SENDRECV(send_right, send_cnt_right, myMPI_ENROUTE, right_rank, 923, &
-                        recv_left,  recv_cnt_left,  myMPI_ENROUTE, left_rank,  923, MPI_COMM_WORLD, istat, ierr)
-
-      ! Insert received particles
-      do p = 1, recv_cnt_right
-        call createParticleFromAttributes(s, recv_right(p) % xi, recv_right(p) % yi, recv_right(p) % zi, &
-                                         recv_right(p) % dx, recv_right(p) % dy, recv_right(p) % dz, &
-                                         recv_right(p) % u,  recv_right(p) % v,  recv_right(p) % w, &
-#ifdef DEBUG
-                                         '`shift_particles recv_right`', &
-#endif
-                                         recv_right(p) % ind, recv_right(p) % proc, recv_right(p) % weight)
-        species(s) % cntr_sp = species(s) % cntr_sp + 1
-      end do
-
-      do p = 1, recv_cnt_left
-        call createParticleFromAttributes(s, recv_left(p) % xi, recv_left(p) % yi, recv_left(p) % zi, &
-                                         recv_left(p) % dx, recv_left(p) % dy, recv_left(p) % dz, &
-                                         recv_left(p) % u,  recv_left(p) % v,  recv_left(p) % w, &
-#ifdef DEBUG
-                                         '`shift_particles recv_left`', &
-#endif
-                                         recv_left(p) % ind, recv_left(p) % proc, recv_left(p) % weight)
-        species(s) % cntr_sp = species(s) % cntr_sp + 1
-      end do
-
-      if (allocated(send_left))  deallocate (send_left)
-      if (allocated(send_right)) deallocate (send_right)
-      if (allocated(recv_right)) deallocate (recv_right)
-      if (allocated(recv_left))  deallocate (recv_left)
-#endif  ! MPI
-
-      if (allocated(old_tiles)) then
-        deallocate (old_tiles)
-      end if
-    end do  ! s
+    ! Do NOT do any MPI here. We rely on the standard
+    ! particle-exchange step that is already present in the code
+    ! (the same one that runs after the normal particle push).
   end subroutine shift_particles
 
 

@@ -267,7 +267,7 @@ contains
       call flushTimer(7)
       !.................................................
 
-      !-------------------------------------------------
+            !-------------------------------------------------
       ! User defined boundary conditions for particles
       call startTimer(9)
       call userParticleBoundaryConditions(timestep)
@@ -276,13 +276,21 @@ contains
       !.................................................
 
       !-------------------------------------------------
-      ! Moving window shift
-      call startTimer(9)
+      ! Moving window shift (fields + particle indices)
 #ifdef MOVING_WINDOW
+      call startTimer(9)
       call moving_window_step(timestep)
-#endif
-      call clearGhostParticles()
       call flushTimer(9)
+#endif
+      !.................................................
+
+      !-------------------------------------------------
+      ! Exchanging particles *after* window shift
+      call startTimer(7)
+      call exchangeParticles()
+      call clearGhostParticles()
+      call checkTileSizes()
+      call flushTimer(7)
       !.................................................
 
       !-------------------------------------------------
