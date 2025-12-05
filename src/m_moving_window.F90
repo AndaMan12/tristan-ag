@@ -16,7 +16,7 @@ module m_moving_window
   integer, save :: mw_shift_start = 0, mw_shift_interval = 0
   real(kind=dprec), save :: mw_speed = 0.0d0, mw_gamma_param = 0.0d0
 
-  private :: shift_fields, shift_particles, refill_new_region, initialize_tile, append_to_tile, clear_tile
+  private :: shift_fields, shift_particles, refill_new_region!, initialize_tile, append_to_tile, clear_tile
 contains
   subroutine moving_window_step(it)
     implicit none
