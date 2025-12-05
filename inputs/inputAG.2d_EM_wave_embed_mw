@@ -18,6 +18,7 @@
   tileX  =  100
   tileY  =  100
   resize_tiles  = 1
+  max_buff      = 128
 
 <moving_window>
 
