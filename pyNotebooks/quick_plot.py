@@ -5,7 +5,8 @@ import tristanVis.isolde as isolde
 from tqdm import tqdm
 
 out_dir = "../slurm_scripts/output/"
-input_file_name = "../inputs/inputAG.2d_EM_wave_embed_mw"
+# input_file_name = "../inputs/inputAG.2d_EM_wave_embed_mw"
+input_file_name = "../slurm_scripts/temp_input_psi0.5_mul13_mul20.1_TT1.9e-2.in"
 # hist            = isolde.parseHistory(out_dir + "history")
 input_params    = isolde.parseInput(input_file_name)
 interval        = input_params["output"]["interval"]
