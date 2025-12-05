@@ -1,6 +1,6 @@
 <node_configuration>
 
-  sizex  =  10
+  sizex  =  20
   sizey  =  1
 
 <time>
@@ -10,7 +10,7 @@
 <grid>
 
   mx0  =  5000
-  my0  =  100
+  my0  =  500
   boundary_x = 0
   abs_thick = 50
   absorb_x = 0
@@ -23,8 +23,8 @@
 <moving_window>
 
   movwin       = 1
-  shiftstart   = 10
-  shiftinterval = 20
+  shiftstart   = 0
+  shiftinterval = 1
   movwingam    = 0.5403023   # gamma of the window (beta~0.98); set <1 to supply beta directly
 
 <algorithm>
@@ -73,6 +73,7 @@
 
 <problem>
 
+  profile_Lx   = 24000
   B_0 = 1
   psi = 1              # Angle of B_0 with x-axis
   B_amplitude = 0.1
@@ -81,7 +82,6 @@
   shift_gamma = 1
   temperature = 1.9e-6 # k_b T / m_e c^2 # m_e c^2 = 511 keV # k_b T = 1e-4 to 0.1 keV
   wA_wp = 0.01
-# init_x_boundary = 4500
   ramp_width = 6
   multiplicity_1 = 3
   multiplicity_2 = 0.1
