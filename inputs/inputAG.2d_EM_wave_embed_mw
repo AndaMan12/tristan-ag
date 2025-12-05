@@ -9,8 +9,8 @@
 
 <grid>
 
-  mx0  =  5000
-  my0  =  500
+  mx0  =  4000
+  my0  =  250
   boundary_x = 0
   abs_thick = 50
   absorb_x = 0
@@ -24,7 +24,7 @@
 
   movwin       = 1
   shiftstart   = 0
-  shiftinterval = 1
+  shiftinterval = 10
   movwingam    = 0.5403023   # gamma of the window (beta~0.98); set <1 to supply beta directly
 
 <algorithm>
