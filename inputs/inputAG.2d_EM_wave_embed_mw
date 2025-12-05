@@ -24,7 +24,7 @@
 
   movwin       = 1
   shiftstart   = 0
-  shiftinterval = 10
+  shiftinterval = 1
   movwingam    = 0.5403023   # gamma of the window (beta~0.98); set <1 to supply beta directly
 
 <algorithm>
