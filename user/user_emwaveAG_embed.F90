@@ -496,7 +496,7 @@ contains
     integer, optional, intent(in) :: step
   end subroutine userDriveParticles
 
-  !--- Open particle boundary on the LEFT side of the moving window ----!
+   !--- Open particle boundary on the LEFT side of the moving window ----!
   subroutine userParticleBoundaryConditions(step)
     implicit none
     integer, optional, intent(in) :: step
@@ -518,4 +518,25 @@ contains
               x_g = x_l + real(this_meshblock%ptr%x0)
 
               ! Open boundary at left; right side is fed by userFillNewRegion.
-              if (x_g < x_left) t
+              if (x_g < x_left) then
+                call removeParticleFromTile(s, ti, tj, tk, p)
+              else
+                p = p + 1
+              end if
+            end do
+          end do
+        end do
+      end do
+    end do
+  end subroutine userParticleBoundaryConditions
+
+  subroutine userFieldBoundaryConditions(step, updateE, updateB)
+    implicit none
+    integer,  optional, intent(in) :: step
+    logical,  optional, intent(in) :: updateE, updateB
+    ! Nothing special here; boundaries are controlled by core code + absorbing BCs.
+  end subroutine userFieldBoundaryConditions
+
+#include "optional.F"
+
+end module m_userfile
